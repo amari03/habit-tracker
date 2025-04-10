@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
-	"errors"
 
 	"github.com/amari03/habit-tracker/internal/data"
 	"github.com/amari03/habit-tracker/internal/validator"
@@ -24,40 +24,40 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 // habitsHandler shows habits by frequency (daily/weekly)
 func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
-    frequency := r.PathValue("frequency")
-    if frequency != "daily" && frequency != "weekly" {
-        app.notFound(w)
-        return
-    }
+	frequency := r.PathValue("frequency")
+	if frequency != "daily" && frequency != "weekly" {
+		app.notFound(w)
+		return
+	}
 
-    habits, err := app.habits.GetAllByFrequency(frequency)
-    if err != nil {
-        app.serverError(w, r, err)
-        return
-    }
+	habits, err := app.habits.GetAllByFrequency(frequency)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 
-    // Convert to slice of pointers
-    habitPtrs := make([]*data.Habit, len(habits))
-    today := time.Now().Format("2006-01-02")
-    
-    for i := range habits {
-        habitPtrs[i] = &habits[i] // Create pointer to each habit
-        
-        entries, err := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now())
-        if err == nil && len(entries) > 0 && entries[0].EntryDate.Format("2006-01-02") == today {
-            habitPtrs[i].TodayStatus = entries[0].Status
-        }
-    }
+	// Convert to slice of pointers
+	habitPtrs := make([]*data.Habit, len(habits))
+	today := time.Now().Format("2006-01-02")
 
-    data := NewTemplateData()
-    data.Title = frequency + " Habits"
-    data.Habits = habitPtrs // Use the pointer slice
-    data.Frequency = frequency
+	for i := range habits {
+		habitPtrs[i] = &habits[i] // Create pointer to each habit
 
-    err = app.render(w, http.StatusOK, frequency+".tmpl", data)
-    if err != nil {
-        app.serverError(w, r, err)
-    }
+		entries, err := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now())
+		if err == nil && len(entries) > 0 && entries[0].EntryDate.Format("2006-01-02") == today {
+			habitPtrs[i].TodayStatus = entries[0].Status
+		}
+	}
+
+	data := NewTemplateData()
+	data.Title = frequency + " Habits"
+	data.Habits = habitPtrs // Use the pointer slice
+	data.Frequency = frequency
+
+	err = app.render(w, http.StatusOK, frequency+".tmpl", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 // createHabitHandler handles new habit creation
@@ -82,20 +82,20 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		data.FormErrors = v.Errors
 
 		// Convert url.Values to map[string]string
-        formData := make(map[string]string)
-        for key, values := range r.PostForm {
-            if len(values) > 0 {
-                formData[key] = values[0] // Take first value
-            }
-        }
-        data.FormData = formData
-        
-        err := app.render(w, http.StatusUnprocessableEntity, "habit_form.tmpl", data)
-        if err != nil {
-            app.serverError(w, r, err)
-        }
-        return
-    }
+		formData := make(map[string]string)
+		for key, values := range r.PostForm {
+			if len(values) > 0 {
+				formData[key] = values[0] // Take first value
+			}
+		}
+		data.FormData = formData
+
+		err := app.render(w, http.StatusUnprocessableEntity, "habit_form.tmpl", data)
+		if err != nil {
+			app.serverError(w, r, err)
+		}
+		return
+	}
 
 	err = app.habits.Insert(habit)
 	if err != nil {
@@ -134,7 +134,7 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 			app.serverError(w, r, err)
 			return
 		}
-		
+
 		entries, err := app.habits.GetEntries(id, time.Now(), time.Now())
 		if err == nil && len(entries) > 0 {
 			habit.TodayStatus = entries[0].Status
@@ -203,20 +203,20 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		data.FormErrors = v.Errors
 
 		// Convert url.Values to map[string]string
-        formData := make(map[string]string)
-        for key, values := range r.PostForm {
-            if len(values) > 0 {
-                formData[key] = values[0] // Take first value
-            }
-        }
-        data.FormData = formData
-        
-        err := app.render(w, http.StatusUnprocessableEntity, "edit.tmpl", data)
-        if err != nil {
-            app.serverError(w, r, err)
-        }
-        return
-    }
+		formData := make(map[string]string)
+		for key, values := range r.PostForm {
+			if len(values) > 0 {
+				formData[key] = values[0] // Take first value
+			}
+		}
+		data.FormData = formData
+
+		err := app.render(w, http.StatusUnprocessableEntity, "edit.tmpl", data)
+		if err != nil {
+			app.serverError(w, r, err)
+		}
+		return
+	}
 
 	err = app.habits.Update(habit)
 	if err != nil {
@@ -250,54 +250,54 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 
 // progressHandler calculates and returns completion progress
 func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) {
-    frequency := r.PathValue("frequency")
-    if frequency != "daily" && frequency != "weekly" {
-        app.notFound(w)
-        return
-    }
+	frequency := r.PathValue("frequency")
+	if frequency != "daily" && frequency != "weekly" {
+		app.notFound(w)
+		return
+	}
 
-    habits, err := app.habits.GetAllByFrequency(frequency)
-    if err != nil {
-        app.serverError(w, r, err)
-        return
-    }
+	habits, err := app.habits.GetAllByFrequency(frequency)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 
-    // Get completion counts
-var completed, total int
-today := time.Now().Format("2006-01-02") // Format: YYYY-MM-DD
+	// Get completion counts
+	var completed, total int
+	today := time.Now().Format("2006-01-02") // Format: YYYY-MM-DD
 
-for _, habit := range habits {
-    // Get today's entries
-    entries, err := app.habits.GetEntries(habit.ID, time.Now(), time.Now())
-    if err == nil && len(entries) > 0 {
-        // Check if any entry for today is "completed"
-        for _, entry := range entries {
-            if entry.EntryDate.Format("2006-01-02") == today && entry.Status == "completed" {
-                completed++
-                break // Only count one completion per habit
-            }
-        }
-    }
-    total++
-}
+	for _, habit := range habits {
+		// Get today's entries
+		entries, err := app.habits.GetEntries(habit.ID, time.Now(), time.Now())
+		if err == nil && len(entries) > 0 {
+			// Check if any entry for today is "completed"
+			for _, entry := range entries {
+				if entry.EntryDate.Format("2006-01-02") == today && entry.Status == "completed" {
+					completed++
+					break // Only count one completion per habit
+				}
+			}
+		}
+		total++
+	}
 
-    // Calculate progress percentage
-    progress := 0
-    if total > 0 {
-        progress = (completed * 100) / total
-    }
+	// Calculate progress percentage
+	progress := 0
+	if total > 0 {
+		progress = (completed * 100) / total
+	}
 
-    // HTMX response
-    if isHTMXRequest(r) {
-        w.Header().Set("Content-Type", "text/html")
-        w.Write([]byte(`<div class="bg-indigo-500 h-4 rounded-full" style="width: ` + strconv.Itoa(progress) + `%"></div>`))
-        return
-    }
+	// HTMX response
+	if isHTMXRequest(r) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<div class="bg-indigo-500 h-4 rounded-full" style="width: ` + strconv.Itoa(progress) + `%"></div>`))
+		return
+	}
 
-    // Regular response
-    data := NewTemplateData()
-    data.Progress = progress
-    app.render(w, http.StatusOK, "partials/progress_bar.tmpl", data)
+	// Regular response
+	data := NewTemplateData()
+	data.Progress = progress
+	app.render(w, http.StatusOK, "partials/progress_bar.tmpl", data)
 }
 
 // Helper to check for HTMX requests

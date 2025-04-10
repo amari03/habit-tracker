@@ -3,8 +3,8 @@ package data
 import (
 	"context"
 	"database/sql"
-	"time"
 	"errors"
+	"time"
 
 	"github.com/amari03/habit-tracker/internal/validator"
 )
@@ -22,7 +22,7 @@ type Habit struct {
 	Goal        string    `json:"goal"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-	TodayStatus string `json:"today_status,omitempty"` 
+	TodayStatus string    `json:"today_status,omitempty"`
 }
 
 func ValidateHabit(v *validator.Validator, h *Habit) {
@@ -39,7 +39,6 @@ func ValidateHabit(v *validator.Validator, h *Habit) {
 type HabitModel struct {
 	DB *sql.DB
 }
-
 
 // Insert a new habit
 func (m *HabitModel) Insert(habit *Habit) error {
@@ -96,33 +95,33 @@ func (m *HabitModel) GetAllByFrequency(frequency string) ([]Habit, error) {
 
 // GetByID returns a single habit by its ID
 func (m *HabitModel) GetByID(id int64) (*Habit, error) {
-    query := `
+	query := `
         SELECT id, title, description, frequency, goal, completed, created_at, updated_at
         FROM habits
         WHERE id = $1`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    var habit Habit
-    err := m.DB.QueryRowContext(ctx, query, id).Scan(
-        &habit.ID,
-        &habit.Title,
-        &habit.Description,
-        &habit.Frequency,
-        &habit.Goal,
-        &habit.CreatedAt,
-        &habit.UpdatedAt,
-    )
+	var habit Habit
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&habit.ID,
+		&habit.Title,
+		&habit.Description,
+		&habit.Frequency,
+		&habit.Goal,
+		&habit.CreatedAt,
+		&habit.UpdatedAt,
+	)
 
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, ErrRecordNotFound
-        }
-        return nil, err
-    }
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
 
-    return &habit, nil
+	return &habit, nil
 }
 
 // Update a habit
@@ -156,17 +155,17 @@ func (m *HabitModel) Delete(id int64) error {
 	return err
 }
 
-//method for toggling completion status
+// method for toggling completion status
 func (m *HabitModel) ToggleCompletion(id int64) error {
 	query := `
 		UPDATE habits
 		SET completed = NOT completed,
 			updated_at = NOW()
 		WHERE id = $1`
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	
+
 	_, err := m.DB.ExecContext(ctx, query, id)
 	return err
 }
@@ -175,56 +174,55 @@ func (m *HabitModel) ToggleCompletion(id int64) error {
 
 // GetEntries returns all entries for a habit within a date range
 func (m *HabitModel) GetEntries(habitID int64, from, to time.Time) ([]HabitEntry, error) {
-    query := `
+	query := `
         SELECT id, habit_id, entry_date, status, notes, created_at
         FROM habit_entries
         WHERE habit_id = $1 AND entry_date BETWEEN $2 AND $3
         ORDER BY entry_date DESC`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    rows, err := m.DB.QueryContext(ctx, query, habitID, from, to)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := m.DB.QueryContext(ctx, query, habitID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var entries []HabitEntry
-    for rows.Next() {
-        var e HabitEntry
-        err := rows.Scan(
-            &e.ID,
-            &e.HabitID,
-            &e.EntryDate,
-            &e.Status,
-            &e.Notes,
-            &e.CreatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
-        entries = append(entries, e)
-    }
+	var entries []HabitEntry
+	for rows.Next() {
+		var e HabitEntry
+		err := rows.Scan(
+			&e.ID,
+			&e.HabitID,
+			&e.EntryDate,
+			&e.Status,
+			&e.Notes,
+			&e.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
 
-    return entries, nil
+	return entries, nil
 }
 
 // LogEntry creates a new habit entry
 func (m *HabitModel) LogEntry(entry *HabitEntry) error {
-    query := `
+	query := `
         INSERT INTO habit_entries (habit_id, entry_date, status, notes)
         VALUES ($1, $2, $3, $4)
         RETURNING id, created_at`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    return m.DB.QueryRowContext(ctx, query,
-        entry.HabitID,
-        entry.EntryDate,
-        entry.Status,
-        entry.Notes,
-    ).Scan(&entry.ID, &entry.CreatedAt)
+	return m.DB.QueryRowContext(ctx, query,
+		entry.HabitID,
+		entry.EntryDate,
+		entry.Status,
+		entry.Notes,
+	).Scan(&entry.ID, &entry.CreatedAt)
 }
-

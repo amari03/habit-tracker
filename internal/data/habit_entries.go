@@ -3,8 +3,8 @@ package data
 import (
 	"context"
 	"database/sql"
-	"time"
 	"errors"
+	"time"
 )
 
 type HabitEntry struct {
@@ -39,24 +39,24 @@ func (m *HabitEntryModel) Insert(entry *HabitEntry) error {
 }
 
 func (m *HabitEntryModel) GetTodayStatus(habitID int64) (string, error) {
-    query := `
+	query := `
         SELECT status 
         FROM habit_entries 
         WHERE habit_id = $1 AND entry_date = CURRENT_DATE
         LIMIT 1`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    var status string
-    err := m.DB.QueryRowContext(ctx, query, habitID).Scan(&status)
-    if err != nil {
-        if errors.Is(err, sql.ErrNoRows) {
-            return "", nil
-        }
-        return "", err
-    }
-    return status, nil
+	var status string
+	err := m.DB.QueryRowContext(ctx, query, habitID).Scan(&status)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return status, nil
 }
 
 // Get all entries for a specific habit
@@ -102,21 +102,22 @@ func (m *HabitEntryModel) GetByHabitID(habitID int64) ([]HabitEntry, error) {
 
 // Update a habit entry
 func (m *HabitEntryModel) Update(entry *HabitEntry) error {
-    query := `
+	query := `
         UPDATE habit_entries
         SET status = $1, notes = $2
         WHERE id = $3
         RETURNING entry_date`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    return m.DB.QueryRowContext(ctx, query, 
-        entry.Status, 
-        entry.Notes, 
-        entry.ID,
-    ).Scan(&entry.EntryDate)
+	return m.DB.QueryRowContext(ctx, query,
+		entry.Status,
+		entry.Notes,
+		entry.ID,
+	).Scan(&entry.EntryDate)
 }
+
 // Delete a habit entry
 func (m *HabitEntryModel) Delete(id int64) error {
 	query := `DELETE FROM habit_entries WHERE id = $1`
@@ -153,30 +154,30 @@ func (m *HabitEntryModel) GetCompletionRate(habitID int64) (float64, error) {
 
 // Add this new method for bulk operations
 func (m *HabitEntryModel) GetRecentCompletions(habitIDs []int64) (map[int64]bool, error) {
-    query := `
+	query := `
         SELECT DISTINCT habit_id
         FROM habit_entries
         WHERE habit_id = ANY($1) 
         AND status = 'completed'
         AND entry_date = CURRENT_DATE`
 
-    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-    rows, err := m.DB.QueryContext(ctx, query, habitIDs)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := m.DB.QueryContext(ctx, query, habitIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    result := make(map[int64]bool)
-    for rows.Next() {
-        var id int64
-        if err := rows.Scan(&id); err != nil {
-            return nil, err
-        }
-        result[id] = true
-    }
+	result := make(map[int64]bool)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		result[id] = true
+	}
 
-    return result, nil
+	return result, nil
 }

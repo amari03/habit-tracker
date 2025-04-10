@@ -18,12 +18,12 @@ type application struct {
 	logger        *slog.Logger
 	addr          *string
 	dsn           *string
-	habits        *data.HabitModel  // Change to concrete type
+	habits        *data.HabitModel // Change to concrete type
 	templateCache map[string]*template.Template
 }
 
 func main() {
-	addr := flag.String("addr", ":4000", "HTTP network address")
+	addr := flag.String("addr", "", "HTTP network address")
 	dsn := flag.String("dsn", "", "PostgreSQL DSN")
 	flag.Parse()
 
