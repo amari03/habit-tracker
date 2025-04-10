@@ -1,0 +1,9 @@
+{{define "habit_list"}}
+<div class="space-y-4" id="habits-list">
+    {{range .Habits}}
+        {{template "habit_item" .}}
+    {{else}}
+        <p class="text-gray-600">No habits yet. Start by adding one!</p>
+    {{end}}
+</div>
+{{end}}

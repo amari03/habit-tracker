@@ -1,0 +1,56 @@
+{{define "title"}}Edit Habit{{end}}
+
+{{define "content"}}
+<div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold mb-4">Edit Habit</h2>
+
+    <form method="POST" action="/{{.Habit.Frequency}}/update/{{.Habit.ID}}" class="space-y-4">
+        <!-- Title -->
+        <div>
+            <label for="title" class="block text-sm font-medium mb-1">Title*</label>
+            <input type="text" id="title" name="title" required 
+                   value="{{.Habit.Title}}" 
+                   class="w-full border border-gray-300 rounded px-3 py-2">
+        </div>
+
+        <!-- Description -->
+        <div>
+            <label for="description" class="block text-sm font-medium mb-1">Description</label>
+            <textarea id="description" name="description"
+                      class="w-full border border-gray-300 rounded px-3 py-2 h-24">{{.Habit.Description}}</textarea>
+        </div>
+
+        <!-- Frequency -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Frequency*</label>
+            <div class="grid grid-cols-3 gap-2">
+                {{range $val := .PermittedFrequencies}}
+                <label class="inline-flex items-center p-2 border rounded-lg 
+                            {{if eq $.Habit.Frequency $val}}border-indigo-500 bg-indigo-50{{end}}">
+                    <input type="radio" name="frequency" value="{{$val}}" 
+                           {{if eq $.Habit.Frequency $val}}checked{{end}}
+                           class="form-radio h-4 w-4 text-indigo-600">
+                    <span class="ml-2 capitalize">{{$val}}</span>
+                </label>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Goal -->
+        <div>
+            <label for="goal" class="block text-sm font-medium mb-1">Goal</label>
+            <input type="text" id="goal" name="goal" 
+                   value="{{.Habit.Goal}}"
+                   placeholder="e.g., '3 times/week'" 
+                   class="w-full border border-gray-300 rounded px-3 py-2">
+        </div>
+
+        <div class="flex justify-between pt-4">
+            <a href="/{{.Habit.Frequency}}" class="text-gray-500 hover:underline">Cancel</a>
+            <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{{end}}

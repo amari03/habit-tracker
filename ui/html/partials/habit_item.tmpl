@@ -1,0 +1,20 @@
+{{define "habit_item"}}
+<div class="bg-white p-4 rounded-lg shadow flex justify-between items-center" 
+     id="habit-{{.ID}}">
+    <div class="flex items-center space-x-3">
+        <input type="checkbox" {{if .Completed}}checked{{end}} 
+               hx-post="/daily/toggle/{{.ID}}"
+               hx-target="#habit-{{.ID}}"
+               hx-swap="outerHTML"
+               class="form-checkbox h-5 w-5 text-indigo-600">
+        <span class="{{if .Completed}}line-through text-gray-500{{end}}">{{.Name}}</span>
+    </div>
+    <div class="space-x-2">
+        <a href="/daily/edit/{{.ID}}" class="text-blue-500 hover:underline">Edit</a>
+        <button hx-delete="/daily/delete/{{.ID}}"
+                hx-target="#habit-{{.ID}}"
+                hx-swap="outerHTML"
+                class="text-red-500 hover:underline">Delete</button>
+    </div>
+</div>
+{{end}}

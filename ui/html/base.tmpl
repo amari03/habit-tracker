@@ -4,29 +4,16 @@
     <meta charset="UTF-8">
     <title>{{block "title" .}}Habit Tracker{{end}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind CDN for now (you can switch to a local build later) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
 </head>
 <body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-white shadow p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-indigo-600">Habit Tracker</h1>
-            <div class="space-x-4">
-                <a href="/" class="text-gray-700 hover:text-indigo-500">Home</a>
-                <a href="/daily" class="text-gray-700 hover:text-indigo-500">Daily</a>
-                <a href="/weekly" class="text-gray-700 hover:text-indigo-500">Weekly</a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Page content -->
+    {{template "nav" .}}
+    
     <main class="container mx-auto p-6 flex-grow">
         {{block "content" .}}{{end}}
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t p-4 mt-8 text-center text-sm text-gray-500">
         &copy; {{.Year}} Habit Tracker App
     </footer>
