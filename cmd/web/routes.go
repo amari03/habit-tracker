@@ -1,8 +1,6 @@
 package main
 
-import (
-	"net/http"
-)
+import "net/http"
 
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
@@ -14,24 +12,14 @@ func (app *application) routes() http.Handler {
 	// Home route
 	mux.HandleFunc("GET /", app.homeHandler)
 
-	// Daily Habits routes
-	mux.HandleFunc("GET /daily", app.dailyHabitsHandler)
-	mux.HandleFunc("POST /daily/create", app.createDailyHabitHandler)
-	mux.HandleFunc("POST /daily/toggle/{id}", app.toggleHabitHandler)
-	mux.HandleFunc("GET /daily/edit/{id}", app.editHabitFormHandler)
-	mux.HandleFunc("POST /daily/update/{id}", app.updateHabitHandler)
-	mux.HandleFunc("DELETE /daily/delete/{id}", app.deleteHabitHandler)
-	mux.HandleFunc("GET /daily/progress", app.progressHandler)
+	// Unified habit routes
+	mux.HandleFunc("GET /{frequency}", app.habitsHandler)                // daily/weekly
+	mux.HandleFunc("POST /habits/create", app.createHabitHandler)       // create new
+	mux.HandleFunc("POST /habits/{id}/entries", app.logEntryHandler)    // log completion
+	mux.HandleFunc("GET /{frequency}/edit/{id}", app.editHabitHandler)  // edit form
+	mux.HandleFunc("POST /habits/update/{id}", app.updateHabitHandler)  // update
+	mux.HandleFunc("DELETE /habits/delete/{id}", app.deleteHabitHandler) // delete
+	mux.HandleFunc("GET /{frequency}/progress", app.progressHandler)    // progress bar
 
-	// Weekly Habits routes (mirror daily structure)
-	mux.HandleFunc("GET /weekly", app.weeklyHabitsHandler)
-	mux.HandleFunc("POST /weekly/create", app.createWeeklyHabitHandler)
-	mux.HandleFunc("POST /weekly/toggle/{id}", app.toggleHabitHandler)
-	mux.HandleFunc("GET /weekly/edit/{id}", app.editHabitFormHandler)
-	mux.HandleFunc("POST /weekly/update/{id}", app.updateHabitHandler)
-	mux.HandleFunc("DELETE /weekly/delete/{id}", app.deleteHabitHandler)
-	mux.HandleFunc("GET /weekly/progress", app.progressHandler)
-
-	// Add middleware chain
 	return app.loggingMiddleware(mux)
 }

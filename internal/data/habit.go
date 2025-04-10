@@ -20,9 +20,9 @@ type Habit struct {
 	Description string    `json:"description"`
 	Frequency   string    `json:"frequency"` // daily, weekly
 	Goal        string    `json:"goal"`
-	Completed   bool      `json:"completed"`  // Add this field
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	TodayStatus string `json:"today_status,omitempty"` 
 }
 
 func ValidateHabit(v *validator.Validator, h *Habit) {
@@ -111,7 +111,6 @@ func (m *HabitModel) GetByID(id int64) (*Habit, error) {
         &habit.Description,
         &habit.Frequency,
         &habit.Goal,
-        &habit.Completed,
         &habit.CreatedAt,
         &habit.UpdatedAt,
     )
@@ -171,3 +170,61 @@ func (m *HabitModel) ToggleCompletion(id int64) error {
 	_, err := m.DB.ExecContext(ctx, query, id)
 	return err
 }
+
+// Add these methods to HabitModel in habit.go
+
+// GetEntries returns all entries for a habit within a date range
+func (m *HabitModel) GetEntries(habitID int64, from, to time.Time) ([]HabitEntry, error) {
+    query := `
+        SELECT id, habit_id, entry_date, status, notes, created_at
+        FROM habit_entries
+        WHERE habit_id = $1 AND entry_date BETWEEN $2 AND $3
+        ORDER BY entry_date DESC`
+
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    rows, err := m.DB.QueryContext(ctx, query, habitID, from, to)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var entries []HabitEntry
+    for rows.Next() {
+        var e HabitEntry
+        err := rows.Scan(
+            &e.ID,
+            &e.HabitID,
+            &e.EntryDate,
+            &e.Status,
+            &e.Notes,
+            &e.CreatedAt,
+        )
+        if err != nil {
+            return nil, err
+        }
+        entries = append(entries, e)
+    }
+
+    return entries, nil
+}
+
+// LogEntry creates a new habit entry
+func (m *HabitModel) LogEntry(entry *HabitEntry) error {
+    query := `
+        INSERT INTO habit_entries (habit_id, entry_date, status, notes)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at`
+
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    return m.DB.QueryRowContext(ctx, query,
+        entry.HabitID,
+        entry.EntryDate,
+        entry.Status,
+        entry.Notes,
+    ).Scan(&entry.ID, &entry.CreatedAt)
+}
+
