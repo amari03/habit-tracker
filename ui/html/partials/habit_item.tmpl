@@ -1,18 +1,18 @@
 {{define "habit_item"}}
 <div class="bg-white p-4 rounded-lg shadow flex justify-between items-center" 
-     id="habit-{{.ID}}">
+     id="habit-{{.Habit.ID}}">
     <div class="flex items-center space-x-3">
-        <input type="checkbox" {{if .Completed}}checked{{end}} 
-               hx-post="/daily/toggle/{{.ID}}"
-               hx-target="#habit-{{.ID}}"
+        <input type="checkbox"
+               hx-post="/daily/toggle/{{.Habit.ID}}"
+               hx-target="#habit-{{.Habit.ID}}"
                hx-swap="outerHTML"
                class="form-checkbox h-5 w-5 text-indigo-600">
-        <span class="{{if .Completed}}line-through text-gray-500{{end}}">{{.Name}}</span>
+        <span>{{.Habit.Title}}</span>
     </div>
     <div class="space-x-2">
-        <a href="/daily/edit/{{.ID}}" class="text-blue-500 hover:underline">Edit</a>
-        <button hx-delete="/daily/delete/{{.ID}}"
-                hx-target="#habit-{{.ID}}"
+        <a href="/daily/edit/{{.Habit.ID}}" class="text-blue-500 hover:underline">Edit</a>
+        <button hx-delete="/daily/delete/{{.Habit.ID}}"
+                hx-target="#habit-{{.Habit.ID}}"
                 hx-swap="outerHTML"
                 class="text-red-500 hover:underline">Delete</button>
     </div>

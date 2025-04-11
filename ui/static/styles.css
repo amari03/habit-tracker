@@ -167,3 +167,245 @@ footer {
         width: auto;
     }
 }
+
+/* Daily page layout */
+.page-layout {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .page-layout {
+        flex-direction: row;
+    }
+}
+
+/* Sidebar styles */
+.sidebar-container {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+    .sidebar-container {
+        width: 25%;
+        margin-bottom: 0;
+        margin-right: 1.5rem;
+    }
+}
+
+.sidebar-panel {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.sidebar-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-link {
+    color: #6366f1;
+}
+
+.sidebar-link:hover {
+    text-decoration: underline;
+}
+
+/* Main content section */
+.main-content {
+    flex: 1;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* Progress bar */
+.progress-container {
+    width: 100%;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+    background-color: #6366f1;
+    height: 1rem;
+    border-radius: 9999px;
+}
+
+/* Habit creation form */
+.form-container {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.form-textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    height: 5rem;
+}
+
+.form-button-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.submit-button {
+    background-color: #6366f1;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.25rem;
+    border: none;
+    cursor: pointer;
+}
+
+.submit-button:hover {
+    background-color: #4f46e5;
+}
+
+/* Habit list */
+.habit-card {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.habit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.habit-content {
+    flex: 1;
+}
+
+.habit-title {
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.habit-description {
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.habit-goal {
+    font-size: 0.875rem;
+    color: #6366f1;
+    margin-top: 0.25rem;
+}
+
+.habit-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.edit-link {
+    color: #3b82f6;
+}
+
+.edit-link:hover {
+    text-decoration: underline;
+}
+
+.delete-button {
+    color: #ef4444;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.delete-button:hover {
+    text-decoration: underline;
+}
+
+.empty-message {
+    color: #6b7280;
+}
+
+/* Daily check-in section */
+.check-in-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.check-in-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.check-in-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.done-button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    background-color: #dcfce7;
+    color: #166534;
+    border: none;
+    cursor: pointer;
+}
+
+.done-button:hover {
+    background-color: #bbf7d0;
+}
+
+.skip-button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    border: none;
+    cursor: pointer;
+}
+
+.skip-button:hover {
+    background-color: #fde68a;
+}

@@ -24,8 +24,14 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 // habitsHandler shows habits by frequency (daily/weekly)
 func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
-	frequency := r.PathValue("frequency")
-	if frequency != "daily" && frequency != "weekly" {
+	var frequency string
+
+	switch r.URL.Path {
+	case "/daily":
+		frequency = "daily"
+	case "/weekly":
+		frequency = "weekly"
+	default:
 		app.notFound(w)
 		return
 	}
@@ -36,12 +42,11 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert to slice of pointers
 	habitPtrs := make([]*data.Habit, len(habits))
 	today := time.Now().Format("2006-01-02")
 
 	for i := range habits {
-		habitPtrs[i] = &habits[i] // Create pointer to each habit
+		habitPtrs[i] = &habits[i]
 
 		entries, err := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now())
 		if err == nil && len(entries) > 0 && entries[0].EntryDate.Format("2006-01-02") == today {
@@ -51,7 +56,7 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := NewTemplateData()
 	data.Title = frequency + " Habits"
-	data.Habits = habitPtrs // Use the pointer slice
+	data.Habits = habitPtrs
 	data.Frequency = frequency
 
 	err = app.render(w, http.StatusOK, frequency+".tmpl", data)
@@ -90,7 +95,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		}
 		data.FormData = formData
 
-		err := app.render(w, http.StatusUnprocessableEntity, "habit_form.tmpl", data)
+		err := app.render(w, http.StatusUnprocessableEntity, "daily.tmpl", data)
 		if err != nil {
 			app.serverError(w, r, err)
 		}
@@ -103,7 +108,14 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	http.Redirect(w, r, "/"+habit.Frequency, http.StatusSeeOther)
+	data := NewTemplateData()
+	data.Habit = habit
+
+	err = app.render(w, http.StatusOK, "habit_item.tmpl", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+
 }
 
 // logEntryHandler records a habit completion/skip
