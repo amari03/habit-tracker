@@ -4,18 +4,34 @@
     <meta charset="UTF-8">
     <title>{{block "title" .}}Habit Tracker{{end}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
+<body>
+    <div id="overlay" class="overlay"></div>
     {{template "nav" .}}
     
-    <main class="container mx-auto p-6 flex-grow">
+    <main class="container">
         {{block "content" .}}{{end}}
     </main>
 
-    <footer class="bg-white border-t p-4 mt-8 text-center text-sm text-gray-500">
+    <footer>
         &copy; {{.Year}} Habit Tracker App
     </footer>
+    <script>
+        document.getElementById('openNav').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('overlay').classList.add('active');
+        });
+        
+        document.getElementById('closeNav').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('active');
+        });
+        
+        document.getElementById('overlay').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('active');
+        });
+    </script>
 </body>
 </html>

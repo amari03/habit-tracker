@@ -1,12 +1,31 @@
 {{define "nav"}}
-<nav class="bg-white shadow p-4">
-    <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold text-indigo-600">Habit Tracker</h1>
-        <div class="space-x-4">
-            <a href="/" class="text-gray-700 hover:text-indigo-500">Home</a>
-            <a href="/daily" class="text-gray-700 hover:text-indigo-500">Daily</a>
-            <a href="/weekly" class="text-gray-700 hover:text-indigo-500">Weekly</a>
-        </div>
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <h1 class="app-title">Habit Tracker</h1>
+        <button id="closeNav" class="menu-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
     </div>
-</nav>
+    <div class="sidebar-links">
+        <a href="/" class="sidebar-link">Home</a>
+        <a href="/daily" class="sidebar-link">Daily</a>
+        <a href="/weekly" class="sidebar-link">Weekly</a>
+    </div>
+</div>
+
+<header>
+    <div class="container header-content">
+        <button id="openNav" class="menu-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <h1 class="app-title">Habit Tracker</h1>
+    </div>
+</header>
 {{end}}

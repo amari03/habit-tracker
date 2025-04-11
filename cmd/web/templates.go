@@ -8,18 +8,27 @@ import (
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./ui/html/**/*.tmpl")
+	// Find all page templates (e.g. home.tmpl, daily.tmpl)
+	pages, err := filepath.Glob("ui/html/pages/*.tmpl")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, page := range pages {
-		fileName := filepath.Base(page)
-		ts, err := template.ParseFiles(page)
+		name := filepath.Base(page)
+
+		// Parse base layout + current page + all partials
+		ts, err := template.ParseFiles("ui/html/base.tmpl", page)
 		if err != nil {
 			return nil, err
 		}
-		cache[fileName] = ts
+
+		ts, err = ts.ParseGlob("ui/html/partials/*.tmpl")
+		if err != nil {
+			return nil, err
+		}
+
+		cache[name] = ts
 	}
 
 	return cache, nil

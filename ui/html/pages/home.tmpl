@@ -1,12 +1,12 @@
 {{define "title"}}Home{{end}}
 
 {{define "content"}}
-<div class="text-center">
-    <h2 class="text-2xl font-semibold mb-4">Welcome!</h2>
-    <p class="mb-6 text-gray-700">What habits are we tracking today?</p>
-    <div class="space-x-4">
-        <a href="/daily" class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg shadow">Daily Habits</a>
-        <a href="/weekly" class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg shadow">Weekly Habits</a>
+<div class="welcome-card">
+    <h2 class="welcome-title">Welcome!</h2>
+    <p class="welcome-message">What habits are we tracking today?</p>
+    <div class="button-container">
+        <a href="/daily" class="primary-button">Daily Habits</a>
+        <a href="/weekly" class="primary-button">Weekly Habits</a>
     </div>
 </div>
 {{end}}

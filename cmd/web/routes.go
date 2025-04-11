@@ -10,7 +10,7 @@ func (app *application) routes() http.Handler {
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fileServer))
 
 	// Home
-	mux.HandleFunc("GET /", app.homeHandler)
+	mux.HandleFunc("GET /{$}", app.homeHandler)
 
 	// Daily + Weekly habit pages
 	mux.HandleFunc("GET /daily", app.habitsHandler)
