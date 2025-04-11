@@ -5,6 +5,7 @@
     <title>{{block "title" .}}Habit Tracker{{end}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
 </head>
 <body>
     <div id="overlay" class="overlay"></div>
@@ -32,6 +33,14 @@
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('active');
         });
+
+        document.getElementById('habit-form').addEventListener('submit', function(e) {
+    console.log('Form submitted!');
+    console.log('Form data:', new FormData(this));
+});
+
+// Verify HTMX is loaded
+console.log('HTMX version:', htmx.version);
     </script>
 </body>
 </html>

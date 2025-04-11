@@ -6,15 +6,16 @@ import (
 )
 
 type TemplateData struct {
-	Title      string
-	Year       int
-	HeaderText string
-	FormErrors map[string]string
-	FormData   map[string]string
-	Habits     []*data.Habit // Changed from DailyHabits/WeeklyHabits to generic Habits
-	Habit      *data.Habit   // Single habit (for edit/view)
-	Progress   int           // For progress bar
-	Frequency  string        // "daily" or "weekly"
+	Title                string
+	Year                 int
+	HeaderText           string
+	PermittedFrequencies []string
+	FormErrors           map[string]string
+	FormData             map[string]string
+	Habits               []*data.Habit // Changed from DailyHabits/WeeklyHabits to generic Habits
+	Habit                *data.Habit   // Single habit (for edit/view)
+	Progress             int           // For progress bar
+	Frequency            string        // "daily" or "weekly"
 }
 
 func NewTemplateData() *TemplateData {

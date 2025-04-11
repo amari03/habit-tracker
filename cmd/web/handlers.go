@@ -67,8 +67,10 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 
 // createHabitHandler handles new habit creation
 func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Request) {
+	app.logger.Info("Create habit request received", "method", r.Method, "url", r.URL)
 	err := r.ParseForm()
 	if err != nil {
+		app.logger.Error("Failed to parse form", "error", err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -80,21 +82,28 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		Goal:        r.FormValue("goal"),
 	}
 
+	app.logger.Info("Habit data received",
+		"title", habit.Title,
+		"description", habit.Description,
+		"frequency", habit.Frequency,
+		"goal", habit.Goal)
+
 	v := validator.NewValidator()
 	data.ValidateHabit(v, habit)
+
 	if !v.ValidData() {
 		data := NewTemplateData()
 		data.FormErrors = v.Errors
 
-		// Convert url.Values to map[string]string
 		formData := make(map[string]string)
 		for key, values := range r.PostForm {
 			if len(values) > 0 {
-				formData[key] = values[0] // Take first value
+				formData[key] = values[0]
 			}
 		}
 		data.FormData = formData
 
+		// Re-render the full daily page with validation errors (fallback)
 		err := app.render(w, http.StatusUnprocessableEntity, "daily.tmpl", data)
 		if err != nil {
 			app.serverError(w, r, err)
@@ -111,11 +120,10 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 	data := NewTemplateData()
 	data.Habit = habit
 
-	err = app.render(w, http.StatusOK, "habit_item.tmpl", data)
+	err = app.render(w, http.StatusOK, "partials/habit_item.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
-
 }
 
 // logEntryHandler records a habit completion/skip
@@ -154,7 +162,7 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 
 		data := NewTemplateData()
 		data.Habit = habit
-		app.render(w, http.StatusOK, "partials/habit_item.tmpl", data)
+		app.render(w, http.StatusOK, "partials/habit_item", data)
 	} else {
 		http.Redirect(w, r, r.Header.Get("HX-Current-URL"), http.StatusSeeOther)
 	}
@@ -162,9 +170,18 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 
 // editHabitHandler shows the edit form
 func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request) {
+	// Get both parameters from the path
+	frequency := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Validate frequency
+	if frequency != "daily" && frequency != "weekly" {
+		app.notFound(w)
 		return
 	}
 
@@ -181,13 +198,19 @@ func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request)
 	data := NewTemplateData()
 	data.Title = "Edit Habit"
 	data.Habit = habit
-	data.Frequency = r.PathValue("frequency")
+	data.Frequency = frequency
+	data.PermittedFrequencies = []string{"daily", "weekly"}
 
-	app.render(w, http.StatusOK, "edit.tmpl", data)
+	err = app.render(w, http.StatusOK, "edit.tmpl", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 // updateHabitHandler processes the edit form
 func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Request) {
+	// Get both parameters from the path
+	frequency := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -204,7 +227,7 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		ID:          id,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
-		Frequency:   r.FormValue("frequency"),
+		Frequency:   r.FormValue("frequency"), // Use the form value
 		Goal:        r.FormValue("goal"),
 	}
 
@@ -213,12 +236,14 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 	if !v.ValidData() {
 		data := NewTemplateData()
 		data.FormErrors = v.Errors
+		data.Habit = habit
+		data.Frequency = frequency // Use the path parameter here
+		data.PermittedFrequencies = []string{"daily", "weekly"}
 
-		// Convert url.Values to map[string]string
 		formData := make(map[string]string)
 		for key, values := range r.PostForm {
 			if len(values) > 0 {
-				formData[key] = values[0] // Take first value
+				formData[key] = values[0]
 			}
 		}
 		data.FormData = formData
@@ -236,20 +261,29 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	http.Redirect(w, r, "/"+habit.Frequency, http.StatusSeeOther)
+	// Use the frequency parameter for redirect
+	http.Redirect(w, r, "/"+frequency, http.StatusSeeOther)
 }
 
 // deleteHabitHandler removes a habit
 func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
+		app.logger.Error("Invalid habit ID", "error", err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
+	app.logger.Info("Deleting habit", "id", id)
+
 	err = app.habits.Delete(id)
 	if err != nil {
-		app.serverError(w, r, err)
+		app.logger.Error("Failed to delete habit", "error", err)
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, r, err)
+		}
 		return
 	}
 

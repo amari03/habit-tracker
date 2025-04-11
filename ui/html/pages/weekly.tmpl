@@ -1,13 +1,12 @@
-{{define "title"}}Daily Habits{{end}}
+{{define "title"}}Weekly Habits{{end}}
 
 {{define "content"}}
-
     <section class="main-content">
-        <h2 class="page-title">Daily Habits to Complete</h2>
+        <h2 class="page-title">Weekly Habits to Complete</h2>
         
         {{template "progress_bar" .}}
 
-        <!-- Updated Habit Creation Form -->
+        <!-- Habit Creation Form -->
         <form hx-post="/habits/create" 
               hx-target="#habits-list" 
               hx-swap="beforeend"
@@ -15,14 +14,14 @@
               id="habit-form">
             
             <!-- Hidden Frequency Field -->
-            <input type="hidden" name="frequency" value="daily">
+            <input type="hidden" name="frequency" value="weekly">
             
             <!-- Title -->
             <div class="form-group">
                 <label for="title" class="form-label">Habit Title*</label>
                 <input type="text" id="title" name="title" required 
                        class="form-input"
-                       placeholder="e.g., Morning Run">
+                       placeholder="e.g., Weekly Review">
             </div>
             
             <!-- Description -->
@@ -38,7 +37,7 @@
                 <label for="goal" class="form-label">Goal</label>
                 <input type="text" id="goal" name="goal"
                        class="form-input"
-                       placeholder="e.g., 30 minutes daily">
+                       placeholder="e.g., 2 hours weekly">
             </div>
             
             <div class="form-button-container">
@@ -68,25 +67,25 @@
                     </div>
                 </div>
                 
-                <!-- Daily Check-in -->
+                <!-- Weekly Check-in -->
                 <div class="check-in-container">
-                    {{template "daily_checkin" .}}
+                    {{template "weekly_checkin" .}}
                 </div>
             </div>
             {{else}}
-            <p class="empty-message">No daily habits yet. Create your first habit above!</p>
+            <p class="empty-message">No weekly habits yet. Create your first habit above!</p>
             {{end}}
         </div>
     </section>
 </div>
 {{end}}
 
-<!-- Daily Check-in Partial -->
-{{define "daily_checkin"}}
+<!-- Weekly Check-in Partial -->
+{{define "weekly_checkin"}}
 <div hx-get="/habits/{{.ID}}/checkin" hx-trigger="load">
     <!-- HTMX will load check-in status here -->
     <div class="check-in-group">
-        <span class="check-in-label">Today:</span>
+        <span class="check-in-label">This Week:</span>
         <button hx-post="/habits/entries/{{.ID}}" 
                 hx-vars='{"status":"completed"}' 
                 class="done-button">

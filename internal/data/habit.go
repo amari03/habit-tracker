@@ -43,9 +43,9 @@ type HabitModel struct {
 // Insert a new habit
 func (m *HabitModel) Insert(habit *Habit) error {
 	query := `
-		INSERT INTO habits (title, description, frequency, goal, completed)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_at, updated_at`
+		INSERT INTO habits (title, description, frequency, goal)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at, updated_at`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -96,7 +96,7 @@ func (m *HabitModel) GetAllByFrequency(frequency string) ([]Habit, error) {
 // GetByID returns a single habit by its ID
 func (m *HabitModel) GetByID(id int64) (*Habit, error) {
 	query := `
-        SELECT id, title, description, frequency, goal, completed, created_at, updated_at
+        SELECT id, title, description, frequency, goal, created_at, updated_at
         FROM habits
         WHERE id = $1`
 

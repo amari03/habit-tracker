@@ -20,21 +20,20 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /daily/progress", app.progressHandler)
 	mux.HandleFunc("GET /weekly/progress", app.progressHandler)
 
-	// Edit pages (no wildcards to avoid conflict)
-	mux.HandleFunc("GET /daily/edit/{id}", app.editHabitHandler)
-	mux.HandleFunc("GET /weekly/edit/{id}", app.editHabitHandler)
-
 	// Create habit
 	mux.HandleFunc("POST /habits/create", app.createHabitHandler)
 
-	// Update habit (clear route)
-	mux.HandleFunc("POST /habits/{id}/update", app.updateHabitHandler)
+	// Edit routes - changed to use /habits/edit prefix
+	mux.HandleFunc("GET /habits/edit/{frequency}/{id}", app.editHabitHandler)
 
-	// Delete habit (same here)
-	mux.HandleFunc("DELETE /habits/{id}/delete", app.deleteHabitHandler)
+	// Update route
+	mux.HandleFunc("POST /habits/update/{frequency}/{id}", app.updateHabitHandler)
+
+	// Delete habit
+	mux.HandleFunc("DELETE /habits/delete/{id}", app.deleteHabitHandler)
 
 	// Log entry for habit completion
-	mux.HandleFunc("POST /habits/{id}/entries", app.logEntryHandler)
+	mux.HandleFunc("POST /habits/entries/{id}", app.logEntryHandler)
 
 	return app.loggingMiddleware(mux)
 }
