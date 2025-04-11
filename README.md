@@ -14,6 +14,8 @@ A web-based habit tracking application that helps users build and maintain daily
 
     Simple, intuitive interface
 
+**Note:** when you submit an entry and it doesn't appear, please refresh the page. 
+
 🛠️ Technologies
 
     Backend: Go (Golang)
@@ -30,6 +32,8 @@ Create a .envrc or set your environment variable:
 
 🗄️ Database Schema (PostgreSQL)
 
+**Note:** An image of this can be found in the folder _DB-Schema_
+
 Run the migrations in /migrations/ or use your own tool.
 
 Tables include:
@@ -38,4 +42,4 @@ Tables include:
 
     habit_entries
 
-    users (for future auth)
+    users (for future auth,table can be updated too)
