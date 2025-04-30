@@ -34,10 +34,73 @@
             document.getElementById('overlay').classList.remove('active');
         });
 
-        document.getElementById('habit-form').addEventListener('submit', function(e) {
-    console.log('Form submitted!');
-    console.log('Form data:', new FormData(this));
-});
+        // Add form validation for all forms
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to validate a form
+            function validateForm(form, e) {
+                let isValid = true;
+                
+                // Function to validate a field
+                function validateField(field, errorMessage) {
+                    if (!field.value.trim()) {
+                        // Add invalid class to the field
+                        field.classList.add('invalid');
+                        
+                        // Add error message if it doesn't exist
+                        let errorDiv = field.parentNode.querySelector('.error');
+                        if (!errorDiv) {
+                            errorDiv = document.createElement('div');
+                            errorDiv.className = 'error';
+                            field.parentNode.appendChild(errorDiv);
+                        }
+                        errorDiv.textContent = errorMessage;
+                        return false;
+                    } else {
+                        // Remove invalid class and error message if field is valid
+                        field.classList.remove('invalid');
+                        const errorDiv = field.parentNode.querySelector('.error');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                        return true;
+                    }
+                }
+                
+                // Get the fields
+                const titleField = form.querySelector('#title');
+                const descriptionField = form.querySelector('#description');
+                const goalField = form.querySelector('#goal');
+                
+                // Validate each field
+                const isTitleValid = validateField(titleField, 'must be provided');
+                const isDescriptionValid = validateField(descriptionField, 'must be provided');
+                const isGoalValid = validateField(goalField, 'must be provided');
+                
+                // If any field is invalid, prevent form submission
+                if (!isTitleValid || !isDescriptionValid || !isGoalValid) {
+                    e.preventDefault();
+                    isValid = false;
+                }
+                
+                return isValid;
+            }
+            
+            // Add validation to the habit creation form
+            const habitForm = document.getElementById('habit-form');
+            if (habitForm) {
+                habitForm.addEventListener('submit', function(e) {
+                    return validateForm(this, e);
+                });
+            }
+            
+            // Add validation to the edit form
+            const editForm = document.querySelector('.edit-form');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    return validateForm(this, e);
+                });
+            }
+        });
 
 // Verify HTMX is loaded
 console.log('HTMX version:', htmx.version);

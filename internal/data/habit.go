@@ -32,7 +32,10 @@ func ValidateHabit(v *validator.Validator, h *Habit) {
 	v.Check(validator.NotBlank(h.Frequency), "frequency", "must be provided")
 	v.Check(validator.PermittedValue(h.Frequency, "daily", "weekly"), "frequency", "must be 'daily' or 'weekly'")
 
+	v.Check(validator.NotBlank(h.Description), "description", "must be provided")
 	v.Check(validator.MaxLength(h.Description, 1000), "description", "must not be more than 1000 characters")
+
+	v.Check(validator.NotBlank(h.Goal), "goal", "must be provided")
 	v.Check(validator.MaxLength(h.Goal, 100), "goal", "must not be more than 100 characters")
 }
 

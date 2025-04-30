@@ -4,23 +4,29 @@
 <div class="edit-container">
     <h2 class="edit-title">Edit Habit</h2>
 
-    <form method="POST" action="/habits/update/{{.Frequency}}/{{.Habit.ID}}" class="edit-form">
+    <form method="POST" action="/habits/update/{{.Frequency}}/{{.Habit.ID}}" class="edit-form" novalidate>
         <!-- Hidden field to ensure frequency is submitted -->
         <input type="hidden" name="original_frequency" value="{{.Frequency}}">
         
         <!-- Title -->
         <div class="form-group">
             <label for="title" class="form-label">Title*</label>
-            <input type="text" id="title" name="title" required 
+            <input type="text" id="title" name="title"
                    value="{{.Habit.Title}}" 
-                   class="form-input">
+                   class="form-input {{if index .FormErrors "title"}}invalid{{end}}">
+            {{with index .FormErrors "title"}}
+                <div class="error">{{.}}</div>
+            {{end}}
         </div>
 
         <!-- Description -->
         <div class="form-group">
             <label for="description" class="form-label">Description</label>
             <textarea id="description" name="description"
-                      class="form-textarea">{{.Habit.Description}}</textarea>
+                      class="form-textarea {{if index .FormErrors "description"}}invalid{{end}}">{{.Habit.Description}}</textarea>
+            {{with index .FormErrors "description"}}
+                <div class="error">{{.}}</div>
+            {{end}}
         </div>
 
         <!-- Frequency Selection -->
@@ -31,8 +37,7 @@
                 <label class="frequency-option {{if eq $.Habit.Frequency $val}}selected{{end}}">
                     <input type="radio" name="frequency" value="{{$val}}" 
                            {{if eq $.Habit.Frequency $val}}checked{{end}}
-                           class="frequency-radio"
-                           required>
+                           class="frequency-radio">
                     <span class="frequency-label">{{$val}}</span>
                 </label>
                 {{end}}
@@ -45,7 +50,10 @@
             <input type="text" id="goal" name="goal" 
                    value="{{.Habit.Goal}}"
                    placeholder="e.g., '3 times/week'" 
-                   class="form-input">
+                   class="form-input {{if index .FormErrors "goal"}}invalid{{end}}">
+            {{with index .FormErrors "goal"}}
+                <div class="error">{{.}}</div>
+            {{end}}
         </div>
 
         <div class="form-actions">

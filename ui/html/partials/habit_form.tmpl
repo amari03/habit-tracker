@@ -1,0 +1,60 @@
+{{define "habit_form"}}
+<form 
+    hx-post="/habits/create" 
+    hx-target="#habit-form-container"
+    hx-swap="outerHTML"
+    class="form-container"
+    id="habit-form"
+    method="POST"
+    novalidate>
+
+    <input type="hidden" name="frequency" value="{{if .Frequency}}{{.Frequency}}{{else}}daily{{end}}">
+
+    <!-- ✅ Title Field -->
+    <div class="form-group">
+        <label for="title" class="form-label">Habit Title</label>
+        <input 
+            type="text" 
+            id="title" 
+            name="title"
+            value="{{index .FormData "title"}}"
+            class="form-input {{if index .FormErrors "title"}}invalid{{end}}"
+            placeholder="e.g., Morning Run">
+        {{with index .FormErrors "title"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <!-- ✅ Description Field -->
+    <div class="form-group">
+        <label for="description" class="form-label">Description</label>
+        <textarea 
+            id="description" 
+            name="description"
+            class="form-textarea {{if index .FormErrors "description"}}invalid{{end}}"
+            placeholder="Optional details about this habit">{{index .FormData "description"}}</textarea>
+        {{with index .FormErrors "description"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <!-- ✅ Goal Field -->
+    <div class="form-group">
+        <label for="goal" class="form-label">Goal</label>
+        <input 
+            type="text" 
+            id="goal" 
+            name="goal"
+            value="{{index .FormData "goal"}}"
+            class="form-input {{if index .FormErrors "goal"}}invalid{{end}}"
+            placeholder="e.g., 30 minutes daily">
+        {{with index .FormErrors "goal"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <div class="form-button-container">
+        <button type="submit" class="submit-button">Create Habit</button>
+    </div>
+</form>
+{{end}}

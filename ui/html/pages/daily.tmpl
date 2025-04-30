@@ -1,55 +1,18 @@
 {{define "title"}}Daily Habits{{end}}
 
 {{define "content"}}
+<section class="main-content">
+    <h2 class="page-title">Daily Habits to Complete</h2>
 
-    <section class="main-content">
-        <h2 class="page-title">Daily Habits to Complete</h2>
-        
-        {{template "progress_bar" .}}
+    {{template "progress_bar" .}}
 
-        <!-- Updated Habit Creation Form -->
-        <form hx-post="/habits/create" 
-              hx-target="#habits-list" 
-              hx-swap="beforeend"
-              class="form-container"
-              id="habit-form">
-            
-            <!-- Hidden Frequency Field -->
-            <input type="hidden" name="frequency" value="daily">
-            
-            <!-- Title -->
-            <div class="form-group">
-                <label for="title" class="form-label">Habit Title*</label>
-                <input type="text" id="title" name="title" required 
-                       class="form-input"
-                       placeholder="e.g., Morning Run">
-            </div>
-            
-            <!-- Description -->
-            <div class="form-group">
-                <label for="description" class="form-label">Description</label>
-                <textarea id="description" name="description"
-                          class="form-textarea"
-                          placeholder="Optional details about this habit"></textarea>
-            </div>
-            
-            <!-- Goal -->
-            <div class="form-group">
-                <label for="goal" class="form-label">Goal</label>
-                <input type="text" id="goal" name="goal"
-                       class="form-input"
-                       placeholder="e.g., 30 minutes daily">
-            </div>
-            
-            <div class="form-button-container">
-                <button type="submit" class="submit-button">
-                    Create Habit
-                </button>
-            </div>
-        </form>
+    <!-- ✅ Habit Creation Form Container -->
+    <div id="habit-form-container">
+        {{template "habit_form" .}}
+    </div>
 
-        <!-- Habit List with Tracking -->
-        <div id="habits-list">
+    <!-- Habit List with Tracking -->
+    <div id="habits-list" hx-get="/daily" hx-trigger="refreshHabitsList from:body" hx-select="#habits-list" hx-swap="innerHTML">
             {{range .Habits}}
             <div class="habit-card" id="habit-{{.ID}}">
                 <div class="habit-header">
@@ -88,12 +51,16 @@
     <div class="check-in-group">
         <span class="check-in-label">Today:</span>
         <button hx-post="/habits/entries/{{.ID}}" 
-                hx-vars='{"status":"completed"}' 
+                hx-vars='{"status":"completed"}'
+                hx-target="#habits-list"
+                hx-swap="innerHTML"
                 class="done-button">
             ✅ Done
         </button>
         <button hx-post="/habits/entries/{{.ID}}" 
-                hx-vars='{"status":"skipped"}' 
+                hx-vars='{"status":"skipped"}'
+                hx-target="#habits-list"
+                hx-swap="innerHTML"
                 class="skip-button">
             ⏸ Skip
         </button>

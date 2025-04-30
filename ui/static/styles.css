@@ -491,3 +491,18 @@ footer {
 .save-button:hover {
     background-color: #4f46e5;
 }
+
+/* Validation styles for both input and textarea */
+.form-input.invalid,
+.form-textarea.invalid {
+    border-color: #e74c3c !important;
+    background-color: #fff5f5 !important;
+    outline: none;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 5px;
+  display: block;
+}

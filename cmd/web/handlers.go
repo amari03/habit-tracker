@@ -68,6 +68,7 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 // createHabitHandler handles new habit creation
 func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Request) {
 	app.logger.Info("Create habit request received", "method", r.Method, "url", r.URL)
+
 	err := r.ParseForm()
 	if err != nil {
 		app.logger.Error("Failed to parse form", "error", err)
@@ -91,38 +92,80 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 	v := validator.NewValidator()
 	data.ValidateHabit(v, habit)
 
+	// 🚫 Validation error
 	if !v.ValidData() {
-		data := NewTemplateData()
-		data.FormErrors = v.Errors
-
-		formData := make(map[string]string)
-		for key, values := range r.PostForm {
-			if len(values) > 0 {
-				formData[key] = values[0]
-			}
+		form := NewTemplateData()
+		form.FormErrors = v.Errors
+		form.FormData = map[string]string{
+			"title":       habit.Title,
+			"description": habit.Description,
+			"goal":        habit.Goal,
 		}
-		data.FormData = formData
+		form.Frequency = habit.Frequency
+		form.Habits = []*data.Habit{} // avoid nil panic if rendered
 
-		// Re-render the full daily page with validation errors (fallback)
-		err := app.render(w, http.StatusUnprocessableEntity, "daily.tmpl", data)
-		if err != nil {
-			app.serverError(w, r, err)
+		// 🧠 If HTMX, render just the form partial
+		if r.Header.Get("HX-Request") == "true" {
+			err := app.renderPartial(w, http.StatusUnprocessableEntity, "partials/habit_form.tmpl", form)
+			if err != nil {
+				app.serverError(w, r, err)
+			}
+		} else {
+			// fallback full render
+			err := app.render(w, http.StatusUnprocessableEntity, "daily.tmpl", form)
+			if err != nil {
+				app.serverError(w, r, err)
+			}
 		}
 		return
 	}
 
+	// ✅ Insert the habit
 	err = app.habits.Insert(habit)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
 
-	data := NewTemplateData()
-	data.Habit = habit
-
-	err = app.render(w, http.StatusOK, "partials/habit_item.tmpl", data)
+	// Get all habits to refresh the list
+	habits, err := app.habits.GetAllByFrequency(habit.Frequency)
 	if err != nil {
 		app.serverError(w, r, err)
+		return
+	}
+
+	// Convert to pointers for template
+	habitPtrs := make([]*data.Habit, len(habits))
+	today := time.Now().Format("2006-01-02")
+
+	for i := range habits {
+		habitPtrs[i] = &habits[i]
+
+		// Get today's status for each habit
+		entries, err := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now())
+		if err == nil && len(entries) > 0 && entries[0].EntryDate.Format("2006-01-02") == today {
+			habitPtrs[i].TodayStatus = entries[0].Status
+		}
+	}
+
+	// Return a fresh form and update the habit list
+	if isHTMXRequest(r) {
+		// Create a fresh form container with a new form
+		formData := NewTemplateData()
+		formData.FormData = map[string]string{
+			"frequency": habit.Frequency,
+		}
+
+		// Return the form container with a fresh form
+		w.Header().Set("HX-Trigger", `{"refreshHabitsList": "#habits-list"}`)
+		err = app.renderPartial(w, http.StatusOK, "partials/habit_form.tmpl", formData)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+	} else {
+		// For non-HTMX requests, redirect to the habits page
+		http.Redirect(w, r, "/"+habit.Frequency, http.StatusSeeOther)
 	}
 }
 
@@ -147,22 +190,11 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// For HTMX requests, return updated habit item
+	// For HTMX requests, trigger a refresh of the habits list
 	if isHTMXRequest(r) {
-		habit, err := app.habits.GetByID(id)
-		if err != nil {
-			app.serverError(w, r, err)
-			return
-		}
-
-		entries, err := app.habits.GetEntries(id, time.Now(), time.Now())
-		if err == nil && len(entries) > 0 {
-			habit.TodayStatus = entries[0].Status
-		}
-
-		data := NewTemplateData()
-		data.Habit = habit
-		app.render(w, http.StatusOK, "partials/habit_item", data)
+		// Set the HX-Trigger header to refresh the habits list
+		w.Header().Set("HX-Trigger", `{"refreshHabitsList": "#habits-list"}`)
+		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Redirect(w, r, r.Header.Get("HX-Current-URL"), http.StatusSeeOther)
 	}
