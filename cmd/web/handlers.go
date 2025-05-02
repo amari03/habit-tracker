@@ -92,7 +92,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 	v := validator.NewValidator()
 	data.ValidateHabit(v, habit)
 
-	// 🚫 Validation error
+	//  Validation error
 	if !v.ValidData() {
 		form := NewTemplateData()
 		form.FormErrors = v.Errors
@@ -104,7 +104,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		form.Frequency = habit.Frequency
 		form.Habits = []*data.Habit{} // avoid nil panic if rendered
 
-		// 🧠 If HTMX, render just the form partial
+		// If HTMX, render just the form partial
 		if r.Header.Get("HX-Request") == "true" {
 			err := app.renderPartial(w, http.StatusUnprocessableEntity, "partials/habit_form.tmpl", form)
 			if err != nil {
@@ -120,7 +120,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// ✅ Insert the habit
+	// Insert the habit
 	err = app.habits.Insert(habit)
 	if err != nil {
 		app.serverError(w, r, err)
