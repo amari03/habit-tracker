@@ -8,23 +8,28 @@ import (
 	"log/slog"
 	"os"
 	"time"
+	"crypto/tls"
 
 	_ "github.com/lib/pq"
 
 	"github.com/amari03/habit-tracker/internal/data"
+	"github.com/golangcollege/sessions"
 )
 
 type application struct {
 	logger        *slog.Logger
 	addr          *string
 	dsn           *string
-	habits        *data.HabitModel // Change to concrete type
+	habits        *data.HabitModel
 	templateCache map[string]*template.Template
+	session       *sessions.Session
 }
 
 func main() {
 	addr := flag.String("addr", "", "HTTP network address")
 	dsn := flag.String("dsn", "", "PostgreSQL DSN")
+	secret := flag.String("secret", "2h78MaIuawl77Ta+iMohobAyXBRfW6RitGQhD5qx0Ps", "Secret key for session")
+
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -43,12 +48,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	session := sessions.New([]byte(*secret))
+	session.Lifetime = 12 * time.Hour
+	session.Secure = true
+
+	tlsConfig := &tls.Config{
+		PreferServerCipherSuites: true,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	app := &application{
 		logger:        logger,
 		addr:          addr,
 		dsn:           dsn,
 		habits:        &data.HabitModel{DB: db}, // Initialize with DB
 		templateCache: templateCache,
+		session:       session,
 	}
 
 	err = app.serve()

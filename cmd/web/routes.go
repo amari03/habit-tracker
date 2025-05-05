@@ -35,5 +35,6 @@ func (app *application) routes() http.Handler {
 	// Log entry for habit completion
 	mux.HandleFunc("POST /habits/entries/{id}", app.logEntryHandler)
 
-	return app.loggingMiddleware(mux)
+	return app.session.Enable(app.loggingMiddleware(mux))
+
 }
