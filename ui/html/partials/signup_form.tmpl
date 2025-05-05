@@ -1,0 +1,59 @@
+{{define "signup_form"}}
+<form 
+    hx-post="/user/signup" 
+    hx-target="#signup-form-container"
+    hx-swap="outerHTML"
+    class="form-container"
+    id="signup-form"
+    method="POST"
+    novalidate>
+
+    <!-- Name Field -->
+    <div class="form-group">
+        <label for="name" class="form-label">Name</label>
+        <input 
+            type="text" 
+            id="name" 
+            name="name"
+            value="{{index .FormData "name"}}"
+            class="form-input {{if index .FormErrors "name"}}invalid{{end}}"
+            placeholder="e.g., Alice Johnson">
+        {{with index .FormErrors "name"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <!-- Email Field -->
+    <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input 
+            type="email" 
+            id="email" 
+            name="email"
+            value="{{index .FormData "email"}}"
+            class="form-input {{if index .FormErrors "email"}}invalid{{end}}"
+            placeholder="e.g., alice@example.com">
+        {{with index .FormErrors "email"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <!-- Password Field -->
+    <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+            type="password" 
+            id="password" 
+            name="password"
+            class="form-input {{if index .FormErrors "password"}}invalid{{end}}"
+            placeholder="Choose a secure password">
+        {{with index .FormErrors "password"}}
+            <div class="error">{{.}}</div>
+        {{end}}
+    </div>
+
+    <div class="form-button-container">
+        <button type="submit" class="submit-button">Sign Up</button>
+    </div>
+</form>
+{{end}}

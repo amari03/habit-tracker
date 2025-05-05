@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"time"
-	"crypto/tls"
 
 	_ "github.com/lib/pq"
 
@@ -23,6 +22,7 @@ type application struct {
 	habits        *data.HabitModel
 	templateCache map[string]*template.Template
 	session       *sessions.Session
+	users 	  *data.UserModel
 }
 
 func main() {
@@ -52,11 +52,6 @@ func main() {
 	session.Lifetime = 12 * time.Hour
 	session.Secure = true
 
-	tlsConfig := &tls.Config{
-		PreferServerCipherSuites: true,
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	}
-
 	app := &application{
 		logger:        logger,
 		addr:          addr,
@@ -64,6 +59,7 @@ func main() {
 		habits:        &data.HabitModel{DB: db}, // Initialize with DB
 		templateCache: templateCache,
 		session:       session,
+		users:         &data.UserModel{DB: db}, // Initialize with DB
 	}
 
 	err = app.serve()

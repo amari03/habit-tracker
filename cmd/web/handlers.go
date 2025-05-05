@@ -2,6 +2,9 @@ package main
 
 import (
 	"errors"
+	"golang.org/x/crypto/bcrypt"
+	//"fmt"
+	//"html/template"
 	"net/http"
 	"strconv"
 	"time"
@@ -376,6 +379,124 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 	data := NewTemplateData()
 	data.Progress = progress
 	app.render(w, http.StatusOK, "partials/progress_bar.tmpl", data)
+}
+
+func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request) {
+	data := NewTemplateData()
+	data.Title = "Sign Up"
+
+	err := app.render(w, http.StatusOK, "signup.tmpl", data)
+    if err != nil {
+        // Use your existing serverError helper for consistency.
+        app.serverError(w, r, err)
+	}
+	
+}
+
+func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
+	// 1. Parse the form data
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// 2. Extract the data from the form values
+	name := r.PostForm.Get("name")
+	email := r.PostForm.Get("email")
+	password := r.PostForm.Get("password") // Get the plain-text password
+
+	// 3. Create a User struct with the basic info
+	user := &data.User{
+		Name:  name,
+		Email: email,
+		// Note: HashedPassword will be set later if validation passes
+		// Active: true, // You might want to set this depending on your schema/logic
+	}
+
+	// 4. Initialize a new Validator instance
+	v := validator.NewValidator()
+
+	// 5. Perform validation
+	// Call your existing ValidateUser for name and email checks
+	data.ValidateUser(v, user)
+
+	// Add password-specific checks here in the handler,
+	// as ValidateUser shouldn't handle the plain password.
+	v.Check(validator.NotBlank(password), "password", "Password must be provided")
+	v.Check(validator.MinLength(password, 8), "password", "Password must be at least 8 characters long")
+	// bcrypt has a maximum input length of 72 bytes. Let's add a check for that.
+	v.Check(validator.MaxLength(password, 72), "password", "Password must not be more than 72 characters")
+
+	// 6. Check if validation failed
+	if !v.ValidData() {
+		app.logger.Info("Signup validation failed", "errors", v.Errors)
+		// Prepare data for re-rendering the form
+		formData := NewTemplateData()
+		formData.Title = "Sign Up - Error"
+		formData.FormErrors = v.Errors
+		// Repopulate form data (excluding password for security)
+		formData.FormData = map[string]string{
+			"name":  name,
+			"email": email,
+		}
+
+		// Render the signup page again with errors
+		err := app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", formData)
+		if err != nil {
+			app.serverError(w, r, err)
+		}
+		return // Stop processing
+	}
+
+	// 7. Hash the password (only do this *after* validation passes)
+	// Use bcrypt.GenerateFromPassword. The second argument is the cost factor (higher is slower but more secure). 12 is a common default.
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	// Assign the hashed password to the user struct
+	user.HashedPassword = hashedPassword
+
+	// 8. Insert the user data into the database
+	err = app.users.Insert(user) // Use your UserModel's Insert method
+	if err != nil {
+		// Check specifically for the duplicate email error
+		if errors.Is(err, data.ErrDuplicateEmail) {
+			v.AddError("email", "Email address is already registered") // Add the error to the validator
+
+			app.logger.Info("Signup failed due to duplicate email", "email", email)
+			// Re-render the form with the duplicate email error
+			formData := NewTemplateData()
+			formData.Title = "Sign Up - Error"
+			formData.FormErrors = v.Errors // v.Errors now includes the duplicate email error
+			formData.FormData = map[string]string{
+				"name":  name,
+				"email": email,
+			}
+			err := app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", formData)
+			if err != nil {
+				app.serverError(w, r, err)
+			}
+		} else {
+			// Handle any other database insertion errors
+			app.serverError(w, r, err)
+		}
+		return // Stop processing
+	}
+
+	// 9. Success! User was created.
+	app.logger.Info("User signed up successfully", "userID", user.ID, "email", user.Email)
+
+	// Add a flash message to the session to inform the user.
+	// Use r.Context() for golangcollege/sessions v1.2.0+
+	app.session.Put(r, "flash", "Your signup was successful! Please log in.")
+
+	// Redirect the user to the login page.
+	// Make sure you have a route and handler for GET /user/login
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+
 }
 
 // Helper to check for HTMX requests

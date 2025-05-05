@@ -6,7 +6,7 @@
 
     {{template "progress_bar" .}}
 
-    <!-- ✅ Habit Creation Form Container -->
+    <!--  Habit Creation Form Container -->
     <div id="habit-form-container">
         {{template "habit_form" .}}
     </div>
@@ -55,7 +55,7 @@
                 hx-target="#habits-list"
                 hx-swap="innerHTML"
                 class="done-button">
-            ✅ Done
+             Done
         </button>
         <button hx-post="/habits/entries/{{.ID}}" 
                 hx-vars='{"status":"skipped"}'

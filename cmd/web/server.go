@@ -4,9 +4,17 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+	"crypto/tls"
 )
 
 func (app *application) serve() error {
+	// Load TLS configuration
+	tlsConfig := &tls.Config{
+		PreferServerCipherSuites: true,
+		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
+
 	srv := &http.Server{
 		Addr:         *app.addr,
 		Handler:      app.routes(),
