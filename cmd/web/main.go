@@ -22,7 +22,7 @@ type application struct {
 	habits        *data.HabitModel
 	templateCache map[string]*template.Template
 	session       *sessions.Session
-	users 	  *data.UserModel
+	users         *data.UserModel
 }
 
 func main() {

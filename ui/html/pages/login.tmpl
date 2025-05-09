@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}} - Habit Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+</head>
+<body class="auth-body">
+    <div class="auth-page-container">
+        <header class="auth-header">
+            <h1 class="app-title">Habit Tracker</h1>
+        </header>
+        <main class="auth-form-container">
+            {{/* Display a flash message if one exists (e.g., after successful signup) */}}
+            {{with .Flash}}
+                <div class="flash-message success">{{.}}</div>
+            {{end}}
+
+            {{template "login_form" .}} <!-- This includes the form from the partial -->
+        </main>
+        <footer class="auth-footer">
+            <p>© {{.Year}} Habit Tracker App</p>
+        </footer>
+    </div>
+</body>
+</html>

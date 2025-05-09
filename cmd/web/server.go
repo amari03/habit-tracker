@@ -1,10 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"log/slog"
 	"net/http"
 	"time"
-	"crypto/tls"
 )
 
 func (app *application) serve() error {
@@ -13,7 +13,6 @@ func (app *application) serve() error {
 		PreferServerCipherSuites: true,
 		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
-
 
 	srv := &http.Server{
 		Addr:         *app.addr,

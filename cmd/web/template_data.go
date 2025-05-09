@@ -16,6 +16,7 @@ type TemplateData struct {
 	Habit                *data.Habit   // Single habit (for edit/view)
 	Progress             int           // For progress bar
 	Frequency            string        // "daily" or "weekly"
+	Flash			  string        // For flash messages
 }
 
 func NewTemplateData() *TemplateData {

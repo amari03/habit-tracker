@@ -1,0 +1,32 @@
+{{define "login_form"}}
+<div class="form-wrapper">
+    <h2 class="form-title">Login</h2>
+
+    {{/* Generic error message for invalid credentials etc. */}}
+    {{with .FormErrors.generic}}
+        <div class="error-message global-error">{{.}}</div>
+    {{end}}
+
+    <form action="/user/login" method="POST" novalidate class="styled-form">
+        <!-- If you implement CSRF protection, the token would go here -->
+        <!-- <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"> -->
+        
+        <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" name="email" id="email" class="form-input" value="{{index .FormData "email"}}" required>
+            {{/* Individual field errors are not shown for login as per requirements */}}
+        </div>
+        
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" name="password" id="password" class="form-input" required>
+            {{/* Individual field errors are not shown for login as per requirements */}}
+        </div>
+        
+        <div class="form-button-container">
+            <button type="submit" class="submit-button">Login</button>
+        </div>
+    </form>
+    <p class="auth-switch-link">Don't have an account? <a href="/user/signup">Sign up</a></p>
+</div>
+{{end}}

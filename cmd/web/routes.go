@@ -39,8 +39,8 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /user/signup", app.signupUserForm)
 	mux.HandleFunc("POST /user/signup", app.signupUser)
 	mux.HandleFunc("GET /user/login", app.loginUserForm)
-	mux.HandleFunc("POST /user/login", app.loginUser)
-	mux.HandleFunc("GET /user/logout", app.logoutUserHandler)
+	//mux.HandleFunc("POST /user/login", app.loginUser)
+	//mux.HandleFunc("GET /user/logout", app.logoutUserHandler)
 
 	return app.session.Enable(app.loggingMiddleware(mux))
 
