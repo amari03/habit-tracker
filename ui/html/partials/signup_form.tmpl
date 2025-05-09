@@ -1,59 +1,71 @@
 {{define "signup_form"}}
-<form 
-    hx-post="/user/signup" 
-    hx-target="#signup-form-container"
-    hx-swap="outerHTML"
-    class="form-container"
-    id="signup-form"
-    method="POST"
-    novalidate>
+<div class="form-wrapper"> 
+    <h2 class="form-title">Create Your Account</h2>
 
-    <!-- Name Field -->
-    <div class="form-group">
-        <label for="name" class="form-label">Name</label>
-        <input 
-            type="text" 
-            id="name" 
-            name="name"
-            value="{{index .FormData "name"}}"
-            class="form-input {{if index .FormErrors "name"}}invalid{{end}}"
-            placeholder="e.g., Alice Johnson">
-        {{with index .FormErrors "name"}}
-            <div class="error">{{.}}</div>
-        {{end}}
-    </div>
+    {{/* 
+        Adjusted hx-target to #signup-form-wrapper.
+        Changed hx-swap to innerHTML to replace content of the wrapper.
+        Using consistent form class: styled-form.
+    */}}
+    <form
+        hx-post="/user/signup"
+        hx-target="#signup-form-wrapper" 
+        hx-swap="innerHTML" 
+        class="styled-form" 
+        id="signup-form"
+        method="POST"
+        novalidate>
 
-    <!-- Email Field -->
-    <div class="form-group">
-        <label for="email" class="form-label">Email</label>
-        <input 
-            type="email" 
-            id="email" 
-            name="email"
-            value="{{index .FormData "email"}}"
-            class="form-input {{if index .FormErrors "email"}}invalid{{end}}"
-            placeholder="e.g., alice@example.com">
-        {{with index .FormErrors "email"}}
-            <div class="error">{{.}}</div>
-        {{end}}
-    </div>
+        <!-- Name Field -->
+        <div class="form-group">
+            <label for="name" class="form-label">Name</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{index .FormData "name"}}"
+                class="form-input {{if index .FormErrors "name"}}error-input{{end}}"
+                placeholder="e.g., Alice Johnson"
+                required>
+            {{with index .FormErrors "name"}}
+                <div class="error-message field-error">{{.}}</div>
+            {{end}}
+        </div>
 
-    <!-- Password Field -->
-    <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <input 
-            type="password" 
-            id="password" 
-            name="password"
-            class="form-input {{if index .FormErrors "password"}}invalid{{end}}"
-            placeholder="Choose a secure password">
-        {{with index .FormErrors "password"}}
-            <div class="error">{{.}}</div>
-        {{end}}
-    </div>
+        <!-- Email Field -->
+        <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value="{{index .FormData "email"}}"
+                class="form-input {{if index .FormErrors "email"}}error-input{{end}}"
+                placeholder="e.g., alice@example.com"
+                required>
+            {{with index .FormErrors "email"}}
+                <div class="error-message field-error">{{.}}</div>
+            {{end}}
+        </div>
 
-    <div class="form-button-container">
-        <button type="submit" class="submit-button">Sign Up</button>
-    </div>
-</form>
+        <!-- Password Field -->
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                class="form-input {{if index .FormErrors "password"}}error-input{{end}}"
+                placeholder="Choose a secure password (min 8 characters)"
+                required>
+            {{with index .FormErrors "password"}}
+                <div class="error-message field-error">{{.}}</div>
+            {{end}}
+        </div>
+
+        <div class="form-button-container">
+            <button type="submit" class="submit-button">Sign Up</button>
+        </div>
+    </form>
+</div>
 {{end}}

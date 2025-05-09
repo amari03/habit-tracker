@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}} - Habit Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    {{/* You might not need HTMX here unless you plan dynamic elements on the landing page itself */}}
+    {{/* <script src="https://unpkg.com/htmx.org@1.9.6"></script> */}}
+</head>
+<body class="landing-body">
+    <div class="landing-page-container">
+        <header class="landing-header">
+            <div class="landing-logo">
+                {{/* You can put a logo image or text here */}}
+                <span class="app-title">Habit Tracker</span>
+            </div>
+            <nav class="landing-nav">
+                <a href="/user/login" class="landing-nav-button">Login</a>
+                <a href="/user/signup" class="landing-nav-button primary">Sign Up</a>
+            </nav>
+        </header>
+
+        <main class="landing-main-content">
+            <section class="hero-section">
+                <h1 class="hero-title">Build Better Habits, Achieve Your Goals.</h1>
+                <p class="hero-subtitle">
+                    Track your progress, stay motivated, and transform your life, one habit at a time.
+                </p>
+                <div class="hero-cta">
+                    <a href="/user/signup" class="cta-button primary-cta">Get Started for Free</a>
+                    {{/* Optionally, a secondary CTA like "Learn More" if you have a features page */}}
+                    {{/* <a href="#features" class="cta-button secondary-cta">Learn More</a> */}}
+                </div>
+            </section>
+
+            {{/* Optional: A section for features if you want to highlight them */}}
+            {{/*
+            <section id="features" class="features-section">
+                <h2 class="section-title">Why Habit Tracker?</h2>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <h3 class="feature-title">Simple Tracking</h3>
+                        <p>Easily log daily and weekly habits with a clean interface.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3 class="feature-title">Stay Motivated</h3>
+                        <p>Visualize your progress and build satisfying streaks.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3 class="feature-title">Flexible Goals</h3>
+                        <p>Set custom goals for each habit to match your ambition.</p>
+                    </div>
+                </div>
+            </section>
+            */}}
+        </main>
+
+        <footer class="landing-footer">
+            <p>© {{.Year}} Habit Tracker App. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -506,3 +506,390 @@ footer {
   margin-top: 5px;
   display: block;
 }
+
+/* Styles for standalone authentication pages (login, signup if you adapt it) */
+.auth-body {
+    background-color: #f9fafb; /* Lighter gray for auth pages */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Basic font stack */
+}
+
+.auth-page-container {
+    width: 100%;
+    max-width: 420px; /* Max width for the auth content block */
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    margin: 2rem 0; /* Add some margin top/bottom */
+}
+
+.auth-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.auth-header .app-title { /* Reuse existing app-title style but ensure it's centered */
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6366f1;
+    margin: 0;
+}
+
+.auth-form-container {
+    padding: 2rem 1.5rem;
+    flex-grow: 1;
+}
+
+.form-wrapper { /* Wrapper specifically for the form and its title/links */
+    width: 100%;
+}
+
+.form-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+}
+
+/* Global error message styling (for invalid credentials, etc.) */
+.error-message.global-error {
+    background-color: #fee2e2; /* Light red */
+    color: #b91c1c; /* Darker red text */
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* More specific styling for forms within auth pages */
+/* Reusing existing .form-group, .form-label, .form-input, .submit-button from your styles.css */
+/* If they are not globally styled enough, you can add .styled-form prefixes like below */
+.styled-form .form-group {
+    margin-bottom: 1.25rem; /* Consistent with your existing .form-group */
+}
+
+.styled-form .form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem; /* Consistent with your existing .form-label */
+    color: #374151;
+}
+
+.styled-form .form-input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem; /* Consistent with your existing .form-input */
+    padding: 0.625rem 0.875rem; /* Slightly adjusted padding for auth forms */
+    font-size: 1rem;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);
+}
+.styled-form .form-input:focus {
+    border-color: #6366f1;
+    outline: 1px solid #6366f1; /* Simple focus outline */
+    box-shadow: 0 0 0 0.125rem rgba(99, 102, 241, 0.25); /* Subtle focus shadow */
+}
+
+.styled-form .submit-button {
+    width: 100%; /* Make button full width in auth forms */
+    background-color: #6366f1; /* Consistent with your .submit-button */
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.25rem; /* Consistent */
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+}
+.styled-form .submit-button:hover {
+    background-color: #4f46e5; /* Consistent */
+}
+
+.auth-switch-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+}
+.auth-switch-link a {
+    color: #6366f1;
+    font-weight: 500;
+}
+.auth-switch-link a:hover {
+    text-decoration: underline;
+}
+
+.auth-footer {
+    padding: 1rem 1.5rem; /* Adjusted padding */
+    text-align: center;
+    font-size: 0.875rem;
+    color: #6b7280;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Flash message styling */
+.flash-message {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+.flash-message.success {
+    background-color: #d1fae5; /* Light green */
+    color: #065f46; /* Darker green text */
+    border: 1px solid #a7f3d0;
+}
+/* You can add .error for error flash messages if needed in other contexts */
+/* .flash-message.error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+} */
+ /* Style for input fields that have an error */
+.form-input.error-input {
+    border-color: #ef4444; /* Red border for error */
+    background-color: #fee2e2; /* Light red background */
+}
+.form-input.error-input:focus {
+    border-color: #ef4444;
+    outline: 1px solid #ef4444;
+    box-shadow: 0 0 0 0.125rem rgba(239, 68, 68, 0.25); /* Red focus shadow */
+}
+
+/* Style for error messages below input fields */
+.error-message.field-error {
+    color: #b91c1c; /* Darker red text for field errors */
+    font-size: 0.875rem; /* 14px */
+    margin-top: 0.25rem; /* Space above the error message */
+    display: block;
+}
+
+/* Ensure .form-wrapper is styled if not already covered by auth-form-container */
+.form-wrapper {
+    width: 100%; /* Ensures it takes up space within auth-form-container */
+}
+
+/* styles.css additions for Landing Page */
+
+.landing-body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    color: #374151; /* Default text color - gray-700 */
+    background-color: #f9fafb; /* Light gray background - gray-50 */
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.landing-page-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
+    max-width: 1280px; /* Max width for content, centered */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* Tailwind: px-4 or px-6 */
+    padding-right: 1rem;
+}
+
+.landing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem; /* Tailwind: py-6 */
+    padding-bottom: 1.5rem;
+}
+
+.landing-logo .app-title { /* Reusing .app-title from main app */
+    font-size: 1.5rem; /* Tailwind: text-2xl */
+    font-weight: 700;
+    color: #6366f1; /* Indigo */
+}
+
+.landing-nav {
+    display: flex;
+    gap: 0.75rem; /* Tailwind: space-x-3 */
+}
+
+.landing-nav-button {
+    padding: 0.5rem 1rem; /* Tailwind: px-4 py-2 */
+    border-radius: 0.375rem; /* Tailwind: rounded-md */
+    font-size: 0.875rem; /* Tailwind: text-sm */
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.landing-nav-button:not(.primary) {
+    color: #4b5563; /* gray-600 */
+    background-color: transparent;
+}
+.landing-nav-button:not(.primary):hover {
+    background-color: #f3f4f6; /* gray-100 */
+}
+
+.landing-nav-button.primary {
+    background-color: #6366f1; /* indigo-600 */
+    color: white;
+}
+.landing-nav-button.primary:hover {
+    background-color: #4f46e5; /* indigo-700 */
+}
+
+
+.landing-main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center the hero content */
+    text-align: center;
+    padding-top: 2rem; /* Add some padding if header is fixed or content is long */
+    padding-bottom: 2rem;
+}
+
+.hero-section {
+    padding: 3rem 0; /* Tailwind: py-12 or py-16 */
+}
+
+.hero-title {
+    font-size: 2.25rem; /* Tailwind: text-4xl or text-5xl */
+    font-weight: 800; /* Tailwind: font-extrabold */
+    color: #1f2937; /* gray-800 */
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+@media (min-width: 640px) { /* sm */
+    .hero-title {
+        font-size: 3rem; /* text-5xl */
+    }
+}
+@media (min-width: 768px) { /* md */
+    .hero-title {
+        font-size: 3.75rem; /* text-6xl */
+    }
+}
+
+
+.hero-subtitle {
+    font-size: 1.125rem; /* Tailwind: text-lg */
+    color: #6b7280; /* gray-500 */
+    max-width: 42rem; /* Limit width for readability */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 2rem; /* Tailwind: mb-8 */
+    line-height: 1.6;
+}
+@media (min-width: 768px) { /* md */
+    .hero-subtitle {
+        font-size: 1.25rem; /* text-xl */
+    }
+}
+
+.hero-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Space between buttons */
+    justify-content: center;
+    align-items: center;
+}
+@media (min-width: 640px) { /* sm */
+    .hero-cta {
+        flex-direction: row;
+    }
+}
+
+.cta-button {
+    padding: 0.75rem 1.5rem; /* Tailwind: px-6 py-3 */
+    border-radius: 0.375rem; /* rounded-md */
+    font-size: 1rem; /* text-base */
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block; /* Important for width and padding */
+    min-width: 180px; /* Minimum width for CTA buttons */
+    text-align: center;
+}
+
+.primary-cta {
+    background-color: #6366f1; /* indigo-600 */
+    color: white;
+    transition: background-color 0.2s ease-in-out;
+}
+.primary-cta:hover {
+    background-color: #4f46e5; /* indigo-700 */
+}
+
+.secondary-cta {
+    background-color: transparent;
+    color: #4f46e5; /* indigo-700 */
+    border: 1px solid #818cf8; /* indigo-400, or a gray */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+.secondary-cta:hover {
+    background-color: #e0e7ff; /* indigo-100 */
+    color: #3730a3; /* indigo-800 */
+}
+
+
+.features-section {
+    padding: 3rem 0; /* Tailwind: py-12 or py-16 */
+    background-color: #ffffff; /* Optional: different background for features */
+}
+
+.section-title {
+    font-size: 1.875rem; /* text-3xl */
+    font-weight: 700;
+    color: #1f2937; /* gray-800 */
+    text-align: center;
+    margin-bottom: 2.5rem; /* mb-10 */
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column by default */
+    gap: 2rem; /* Tailwind: gap-8 */
+}
+@media (min-width: 768px) { /* md */
+    .features-grid {
+        grid-template-columns: repeat(3, 1fr); /* Three columns on medium screens */
+    }
+}
+
+.feature-item {
+    text-align: left; /* Or center if you prefer */
+    padding: 1.5rem;
+    background-color: #f9fafb; /* Or white if section is gray */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* shadow-md */
+}
+
+.feature-title {
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 600;
+    color: #111827; /* gray-900 */
+    margin-bottom: 0.5rem; /* mb-2 */
+}
+.feature-item p {
+    color: #6b7280; /* gray-500 */
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.landing-footer {
+    text-align: center;
+    padding: 2rem 0; /* Tailwind: py-8 */
+    font-size: 0.875rem; /* text-sm */
+    color: #6b7280; /* gray-500 */
+    border-top: 1px solid #e5e7eb; /* gray-200 */
+    margin-top: auto; /* Pushes footer to bottom if content is short */
+}

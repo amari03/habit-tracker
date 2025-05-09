@@ -8,8 +8,9 @@
     {{end}}
 
     <form action="/user/login" method="POST" novalidate class="styled-form">
-        <!-- If you implement CSRF protection, the token would go here -->
-        <!-- <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"> -->
+        {{/* If you implement CSRF protection, the token would go here:
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"> 
+        */}}
         
         <div class="form-group">
             <label for="email" class="form-label">Email</label>

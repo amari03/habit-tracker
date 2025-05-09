@@ -24,6 +24,25 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// landingHandler renders the landing page
+func (app *application) landingPageHandler(w http.ResponseWriter, r *http.Request) {
+	// If the user is already authenticated, maybe redirect them to their dashboard/home
+	// For now, we'll always show the landing page.
+	// if app.isAuthenticated(r) { // You'll need an isAuthenticated helper
+	// http.Redirect(w, r, "/daily", http.StatusSeeOther)
+	// return
+	// }
+
+	data := NewTemplateData()
+	data.Title = "Welcome" // Title for the landing page
+	// data.Flash = app.session.PopString(r, "flash") // If landing page needs to show flash messages
+
+	err := app.render(w, http.StatusOK, "landing.tmpl", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+}
+
 // habitsHandler shows habits by frequency (daily/weekly)
 func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 	var frequency string
@@ -384,9 +403,9 @@ func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request) {
 	data := NewTemplateData()
 	data.Title = "Sign Up"
 
+	// signup.tmpl is now a standalone page
 	err := app.render(w, http.StatusOK, "signup.tmpl", data)
 	if err != nil {
-		// Use your existing serverError helper for consistency.
 		app.serverError(w, r, err)
 	}
 
@@ -505,6 +524,74 @@ func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, r, err)
 	}
+}
+
+func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	email := r.PostForm.Get("email")
+	passwordInput := r.PostForm.Get("password")
+
+	v := validator.NewValidator() // Create a new validator instance
+
+	// Basic checks for blank fields.
+	// The error key "generic" will be used by login.tmpl to display a general message.
+	if !validator.NotBlank(email) || !validator.NotBlank(passwordInput) {
+		v.AddError("generic", "Both email and password must be provided.")
+	}
+
+	// If there are any validation errors (e.g., blank fields)
+	if !v.ValidData() {
+		data := NewTemplateData()
+		data.Title = "Login - Error"
+		data.FormData = map[string]string{"email": email} // Repopulate email
+		data.FormErrors = v.Errors                        // Pass all validation errors
+
+		errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+		if errRender != nil {
+			app.serverError(w, r, errRender)
+		}
+		return
+	}
+
+	// Attempt to authenticate the user
+	id, err := app.users.Authenticate(email, passwordInput)
+	if err != nil {
+		if errors.Is(err, data.ErrInvalidCredentials) {
+			// Add a generic error for invalid credentials
+			v.AddError("generic", "Invalid email or password.")
+
+			data := NewTemplateData()
+			data.Title = "Login - Error"
+			data.FormData = map[string]string{"email": email} // Repopulate email
+			data.FormErrors = v.Errors                        // Pass the updated errors
+
+			errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+			if errRender != nil {
+				app.serverError(w, r, errRender)
+			}
+		} else {
+			// Any other error from Authenticate is a server error
+			app.serverError(w, r, err)
+		}
+		return
+	}
+
+	// Authentication successful
+	app.session.Put(r, "authenticatedUserID", id) // Store user ID in session
+	app.session.Put(r, "flash", "You have been logged in successfully!")
+
+	// Redirect to a relevant page, e.g., daily habits or home
+	http.Redirect(w, r, "/apphome", http.StatusSeeOther)
+}
+
+// logoutUserHandler handles user logout
+func (app *application) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 
 // Helper to check for HTMX requests

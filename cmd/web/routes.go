@@ -9,8 +9,11 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fileServer))
 
-	// Home
-	mux.HandleFunc("GET /{$}", app.homeHandler)
+	// Publicly accessible landing page at the root
+	mux.HandleFunc("GET /{$}", app.landingPageHandler)
+
+	// Authenticated user's "home" page
+	mux.HandleFunc("GET /apphome", app.homeHandler)
 
 	// Daily + Weekly habit pages
 	mux.HandleFunc("GET /daily", app.habitsHandler)
@@ -39,8 +42,8 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /user/signup", app.signupUserForm)
 	mux.HandleFunc("POST /user/signup", app.signupUser)
 	mux.HandleFunc("GET /user/login", app.loginUserForm)
-	//mux.HandleFunc("POST /user/login", app.loginUser)
-	//mux.HandleFunc("GET /user/logout", app.logoutUserHandler)
+	mux.HandleFunc("POST /user/login", app.loginUser)
+	mux.HandleFunc("GET /user/logout", app.logoutUserHandler)
 
 	return app.session.Enable(app.loggingMiddleware(mux))
 

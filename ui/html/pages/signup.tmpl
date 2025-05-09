@@ -1,13 +1,32 @@
-{{define "title"}}Sign Up{{end}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}} - Habit Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+</head>
+<body class="auth-body">
+    <div class="auth-page-container">
+        <header class="auth-header">
+            <h1 class="app-title">Habit Tracker</h1>
+        </header>
+        <main class="auth-form-container">
+            {{/* Display a flash message if one exists (e.g., after a failed action, though less common on signup itself) */}}
+            {{with .Flash}}
+                <div class="flash-message success">{{.}}</div>
+            {{end}}
 
-{{define "content"}}
-<div class="signup-container" style="max-width: 28rem; margin: 2rem auto;"> <!-- Simple container -->
-    <h2 class="page-title" style="text-align: center; margin-bottom: 1.5rem;">Create Your Account</h2>
-
-    <!-- This div matches the hx-target in your signup_form.tmpl partial -->
-    <div id="signup-form-container">
-        {{/* Render the signup form partial, passing the current data context */}}
-        {{template "signup_form" .}}
+            <!-- This div can be targeted by HTMX if the form partial swaps itself -->
+            <div id="signup-form-wrapper">
+                {{template "signup_form" .}} <!-- Includes the form from the partial -->
+            </div>
+        </main>
+        <footer class="auth-footer">
+            <p>© {{.Year}} Habit Tracker App</p>
+            <p><a href="/user/login">Already have an account? Log in</a></p>
+        </footer>
     </div>
-</div>
-{{end}}
+</body>
+</html>

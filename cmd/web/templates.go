@@ -19,9 +19,8 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		var ts *template.Template
 		var parseErr error
 
-		// For pages that are standalone (like login.tmpl), parse them directly.
-		// For others, parse them with base.tmpl.
-		if name == "login.tmpl" { // Add other standalone pages here if any (e.g., "signup.tmpl" if it also shouldn't have nav)
+		// For pages that are standalone (like login.tmpl and signup.tmpl), parse them directly.
+		if name == "login.tmpl" || name == "signup.tmpl" || name == "landing.tmpl" { // standalone pages
 			ts, parseErr = template.ParseFiles(page)
 		} else {
 			// Assume other pages use base.tmpl
@@ -32,9 +31,6 @@ func newTemplateCache() (map[string]*template.Template, error) {
 			return nil, parseErr
 		}
 
-		// After parsing the main page (either standalone or with base),
-		// parse all partials into the template set.
-		// This allows any page to call any partial it needs.
 		ts, parseErr = ts.ParseGlob("ui/html/partials/*.tmpl")
 		if parseErr != nil {
 			return nil, parseErr
