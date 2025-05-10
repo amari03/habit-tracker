@@ -26,12 +26,6 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 // landingHandler renders the landing page
 func (app *application) landingPageHandler(w http.ResponseWriter, r *http.Request) {
-	// If the user is already authenticated, maybe redirect them to their dashboard/home
-	// For now, we'll always show the landing page.
-	// if app.isAuthenticated(r) { // You'll need an isAuthenticated helper
-	// http.Redirect(w, r, "/daily", http.StatusSeeOther)
-	// return
-	// }
 
 	data := NewTemplateData()
 	data.Title = "Welcome" // Title for the landing page
@@ -527,8 +521,11 @@ func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+	app.logger.Info("Login attempt started") // <-- ADD THIS
+
 	err := r.ParseForm()
 	if err != nil {
+		app.logger.Error("Login: Failed to parse form", "error", err) // <-- ADD THIS
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -536,62 +533,74 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 	email := r.PostForm.Get("email")
 	passwordInput := r.PostForm.Get("password")
 
-	v := validator.NewValidator() // Create a new validator instance
+	// Log the received credentials (BE CAREFUL WITH PASSWORDS IN PRODUCTION LOGS)
+	// For debugging, this is okay, but remove or hash passwords for production.
+	app.logger.Info("Login attempt", "email", email, "password_provided_length", len(passwordInput)) // <-- MODIFIED LOGGING
 
-	// Basic checks for blank fields.
-	// The error key "generic" will be used by login.tmpl to display a general message.
+	v := validator.NewValidator()
+
 	if !validator.NotBlank(email) || !validator.NotBlank(passwordInput) {
+		app.logger.Info("Login: Blank email or password detected by NotBlank check") // <-- ADD THIS
 		v.AddError("generic", "Both email and password must be provided.")
 	}
 
-	// If there are any validation errors (e.g., blank fields)
 	if !v.ValidData() {
+		app.logger.Info("Login: Validation failed (e.g., blank fields)", "errors", v.Errors) // <-- ADD THIS
 		data := NewTemplateData()
 		data.Title = "Login - Error"
-		data.FormData = map[string]string{"email": email} // Repopulate email
-		data.FormErrors = v.Errors                        // Pass all validation errors
+		data.FormData = map[string]string{"email": email}
+		data.FormErrors = v.Errors
 
 		errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
 		if errRender != nil {
+			app.logger.Error("Login: Failed to render login.tmpl on validation error", "render_error", errRender) // <-- ADD THIS
 			app.serverError(w, r, errRender)
 		}
 		return
 	}
 
-	// Attempt to authenticate the user
+	app.logger.Info("Login: Attempting to authenticate user", "email", email) // <-- ADD THIS
 	id, err := app.users.Authenticate(email, passwordInput)
 	if err != nil {
 		if errors.Is(err, data.ErrInvalidCredentials) {
-			// Add a generic error for invalid credentials
+			app.logger.Info("Login: Authentication failed - Invalid Credentials", "email", email, "auth_error", err) // <-- MODIFIED LOGGING
 			v.AddError("generic", "Invalid email or password.")
 
 			data := NewTemplateData()
 			data.Title = "Login - Error"
-			data.FormData = map[string]string{"email": email} // Repopulate email
-			data.FormErrors = v.Errors                        // Pass the updated errors
+			data.FormData = map[string]string{"email": email}
+			data.FormErrors = v.Errors
 
 			errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
 			if errRender != nil {
+				app.logger.Error("Login: Failed to render login.tmpl on auth error", "render_error", errRender) // <-- ADD THIS
 				app.serverError(w, r, errRender)
 			}
 		} else {
-			// Any other error from Authenticate is a server error
+			// Log any other unexpected errors from Authenticate
+			app.logger.Error("Login: Unexpected error during authentication", "email", email, "auth_error", err) // <-- MODIFIED LOGGING
 			app.serverError(w, r, err)
 		}
 		return
 	}
 
-	// Authentication successful
-	app.session.Put(r, "authenticatedUserID", id) // Store user ID in session
+	app.logger.Info("Login: Authentication successful", "userID", id, "email", email) // <-- MODIFIED LOGGING
+	app.session.Put(r, "authenticatedUserID", id)
 	app.session.Put(r, "flash", "You have been logged in successfully!")
-
-	// Redirect to a relevant page, e.g., daily habits or home
 	http.Redirect(w, r, "/apphome", http.StatusSeeOther)
 }
 
 // logoutUserHandler handles user logout
 func (app *application) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
+	// Remove the authenticatedUserID key from the session data.
+	app.session.Remove(r, "authenticatedUserID")
 
+	// Put a flash message in the session to inform the user.
+	app.session.Put(r, "flash", "You have been logged out successfully.")
+
+	// Redirect the user to the login page.
+	// You could also redirect to the home page ("/") if preferred.
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 // Helper to check for HTMX requests

@@ -59,6 +59,13 @@ main {
     background-color: #f3f4f6;
 }
 
+.sidebar-divider {
+    border: 0;
+    height: 1px;
+    background-color: #e5e7eb; /* Light gray, adjust as needed */
+    margin: 0.5rem 0;
+}
+
 .overlay {
     position: fixed;
     top: 0;
