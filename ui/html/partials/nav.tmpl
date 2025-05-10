@@ -10,16 +10,24 @@
         </button>
     </div>
     <div class="sidebar-links">
-        <a href="/" class="sidebar-link">Home</a>
-        <a href="/daily" class="sidebar-link">Daily</a>
-        <a href="/weekly" class="sidebar-link">Weekly</a>
-        <hr class="sidebar-divider"> {{/* Optional divider */}}
-        <a href="/user/logout" class="sidebar-link">Logout</a> {{/* Logout Link */}}
+        {{if .IsAuthenticated}}
+            <a href="/apphome" class="sidebar-link">Dashboard</a> {{/* Changed from "/" to "/apphome" */}}
+            <a href="/daily" class="sidebar-link">Daily</a>
+            <a href="/weekly" class="sidebar-link">Weekly</a>
+            <hr class="sidebar-divider">
+            <a href="/user/logout" class="sidebar-link">Logout</a>
+        {{else}}
+            <a href="/" class="sidebar-link">Welcome</a> {{/* Link to public landing page */}}
+            <hr class="sidebar-divider">
+            <a href="/user/login" class="sidebar-link">Login</a>
+            <a href="/user/signup" class="sidebar-link">Sign Up</a>
+        {{end}}
     </div>
 </div>
 
 <header>
     <div class="container header-content">
+        {{if .IsAuthenticated}} {{/* Only show menu button if authenticated and nav has content */}}
         <button id="openNav" class="menu-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -27,7 +35,14 @@
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
+        {{end}}
         <h1 class="app-title">Habit Tracker</h1>
+        {{if not .IsAuthenticated}}
+        <div style="margin-left: auto;"> {{/* Basic styling to push to the right */}}
+            <a href="/user/login" style="margin-right: 10px; color: #6366f1; text-decoration: none;">Login</a>
+            <a href="/user/signup" style="color: #6366f1; text-decoration: none;">Sign Up</a>
+        </div>
+        {{end}}
     </div>
 </header>
 {{end}}

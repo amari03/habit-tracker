@@ -9,42 +9,49 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fileServer))
 
-	// Publicly accessible landing page at the root
-	mux.HandleFunc("GET /{$}", app.landingPageHandler)
+	// --- Publicly accessible routes ---
+	mux.HandleFunc("GET /{$}", app.landingPageHandler)     // Landing page
+	mux.HandleFunc("GET /user/signup", app.signupUserForm) // Signup form
+	mux.HandleFunc("POST /user/signup", app.signupUser)    // Signup action
+	mux.HandleFunc("GET /user/login", app.loginUserForm)   // Login form
+	mux.HandleFunc("POST /user/login", app.loginUser)      // Login action
+
+	// --- Authenticated routes ---
+	// We will create a new ServeMux for protected routes and apply middleware to it.
+	// This is cleaner than wrapping each handler individually IF all routes under a certain path prefix are protected.
+	// However, with diverse paths, individual wrapping might be necessary.
+	// For this setup, since paths are diverse, we'll wrap handlers.
 
 	// Authenticated user's "home" page
-	mux.HandleFunc("GET /apphome", app.homeHandler)
+	mux.Handle("GET /apphome", app.requireAuthentication(http.HandlerFunc(app.homeHandler)))
 
 	// Daily + Weekly habit pages
-	mux.HandleFunc("GET /daily", app.habitsHandler)
-	mux.HandleFunc("GET /weekly", app.habitsHandler)
+	mux.Handle("GET /daily", app.requireAuthentication(http.HandlerFunc(app.habitsHandler)))
+	mux.Handle("GET /weekly", app.requireAuthentication(http.HandlerFunc(app.habitsHandler)))
 
 	// Progress routes
-	mux.HandleFunc("GET /daily/progress", app.progressHandler)
-	mux.HandleFunc("GET /weekly/progress", app.progressHandler)
+	mux.Handle("GET /daily/progress", app.requireAuthentication(http.HandlerFunc(app.progressHandler)))
+	mux.Handle("GET /weekly/progress", app.requireAuthentication(http.HandlerFunc(app.progressHandler)))
 
 	// Create habit
-	mux.HandleFunc("POST /habits/create", app.createHabitHandler)
+	mux.Handle("POST /habits/create", app.requireAuthentication(http.HandlerFunc(app.createHabitHandler)))
 
-	// Edit routes - changed to use /habits/edit prefix
-	mux.HandleFunc("GET /habits/edit/{frequency}/{id}", app.editHabitHandler)
+	// Edit routes
+	mux.Handle("GET /habits/edit/{frequency}/{id}", app.requireAuthentication(http.HandlerFunc(app.editHabitHandler)))
 
 	// Update route
-	mux.HandleFunc("POST /habits/update/{frequency}/{id}", app.updateHabitHandler)
+	mux.Handle("POST /habits/update/{frequency}/{id}", app.requireAuthentication(http.HandlerFunc(app.updateHabitHandler)))
 
 	// Delete habit
-	mux.HandleFunc("DELETE /habits/delete/{id}", app.deleteHabitHandler)
+	mux.Handle("DELETE /habits/delete/{id}", app.requireAuthentication(http.HandlerFunc(app.deleteHabitHandler)))
 
 	// Log entry for habit completion
-	mux.HandleFunc("POST /habits/entries/{id}", app.logEntryHandler)
+	mux.Handle("POST /habits/entries/{id}", app.requireAuthentication(http.HandlerFunc(app.logEntryHandler)))
 
-	//user routes
-	mux.HandleFunc("GET /user/signup", app.signupUserForm)
-	mux.HandleFunc("POST /user/signup", app.signupUser)
-	mux.HandleFunc("GET /user/login", app.loginUserForm)
-	mux.HandleFunc("POST /user/login", app.loginUser)
-	mux.HandleFunc("GET /user/logout", app.logoutUserHandler)
+	// Logout route (typically requires authentication to be meaningful, though the handler itself doesn't enforce it)
+	mux.Handle("GET /user/logout", app.requireAuthentication(http.HandlerFunc(app.logoutUserHandler)))
 
+	// The session middleware should wrap everything, then logging, then the mux with its routes.
+	// The requireAuthentication middleware is applied to specific handlers.
 	return app.session.Enable(app.loggingMiddleware(mux))
-
 }

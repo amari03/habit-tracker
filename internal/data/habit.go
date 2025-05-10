@@ -12,10 +12,13 @@ import (
 // Add this error definition
 var (
 	ErrRecordNotFound = errors.New("record not found")
+	// You might want to add an error for unauthorized access later
+	// ErrForbiddenAccess = errors.New("forbidden access")
 )
 
 type Habit struct {
 	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Frequency   string    `json:"frequency"` // daily, weekly
@@ -46,14 +49,15 @@ type HabitModel struct {
 // Insert a new habit
 func (m *HabitModel) Insert(habit *Habit) error {
 	query := `
-		INSERT INTO habits (title, description, frequency, goal)
-        VALUES ($1, $2, $3, $4)
+		INSERT INTO habits (user_id, title, description, frequency, goal) -- Add user_id
+        VALUES ($1, $2, $3, $4, $5)                                  -- Add $1 for user_id
         RETURNING id, created_at, updated_at`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	return m.DB.QueryRowContext(ctx, query,
+		habit.UserID, // Pass UserID
 		habit.Title,
 		habit.Description,
 		habit.Frequency,
@@ -61,18 +65,18 @@ func (m *HabitModel) Insert(habit *Habit) error {
 	).Scan(&habit.ID, &habit.CreatedAt, &habit.UpdatedAt)
 }
 
-// GetAllByFrequency returns all habits with matching frequency ("daily" or "weekly")
-func (m *HabitModel) GetAllByFrequency(frequency string) ([]Habit, error) {
+// GetAllByFrequency returns all habits for a given user with matching frequency
+func (m *HabitModel) GetAllByFrequency(userID int64, frequency string) ([]Habit, error) {
 	query := `
-		SELECT id, title, description, frequency, goal, created_at, updated_at
+		SELECT id, user_id, title, description, frequency, goal, created_at, updated_at -- Add user_id
 		FROM habits
-		WHERE frequency = $1
+		WHERE user_id = $1 AND frequency = $2 -- Filter by user_id and frequency
 		ORDER BY created_at DESC`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query, frequency)
+	rows, err := m.DB.QueryContext(ctx, query, userID, frequency) // Pass userID
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +86,16 @@ func (m *HabitModel) GetAllByFrequency(frequency string) ([]Habit, error) {
 
 	for rows.Next() {
 		var h Habit
-		err := rows.Scan(&h.ID, &h.Title, &h.Description, &h.Frequency, &h.Goal, &h.CreatedAt, &h.UpdatedAt)
+		err := rows.Scan(
+			&h.ID,
+			&h.UserID, // Scan UserID
+			&h.Title,
+			&h.Description,
+			&h.Frequency,
+			&h.Goal,
+			&h.CreatedAt,
+			&h.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +112,7 @@ func (m *HabitModel) GetAllByFrequency(frequency string) ([]Habit, error) {
 // GetByID returns a single habit by its ID
 func (m *HabitModel) GetByID(id int64) (*Habit, error) {
 	query := `
-        SELECT id, title, description, frequency, goal, created_at, updated_at
+        SELECT id, user_id, title, description, frequency, goal, created_at, updated_at -- Add user_id
         FROM habits
         WHERE id = $1`
 
@@ -109,6 +122,7 @@ func (m *HabitModel) GetByID(id int64) (*Habit, error) {
 	var habit Habit
 	err := m.DB.QueryRowContext(ctx, query, id).Scan(
 		&habit.ID,
+		&habit.UserID, // Scan UserID
 		&habit.Title,
 		&habit.Description,
 		&habit.Frequency,
@@ -118,7 +132,7 @@ func (m *HabitModel) GetByID(id int64) (*Habit, error) {
 	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrRecordNotFound
 		}
 		return nil, err
@@ -127,39 +141,66 @@ func (m *HabitModel) GetByID(id int64) (*Habit, error) {
 	return &habit, nil
 }
 
-// Update a habit
+// Update a habit for a specific user
 func (m *HabitModel) Update(habit *Habit) error {
 	query := `
 		UPDATE habits
 		SET title = $1, description = $2, frequency = $3, goal = $4, updated_at = NOW()
-		WHERE id = $5`
+		WHERE id = $5 AND user_id = $6` // Add user_id to WHERE clause for ownership
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := m.DB.ExecContext(ctx, query,
+	result, err := m.DB.ExecContext(ctx, query,
 		habit.Title,
 		habit.Description,
 		habit.Frequency,
 		habit.Goal,
 		habit.ID,
+		habit.UserID, // Pass UserID for the WHERE clause
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		// This could mean the habit ID didn't exist OR it didn't belong to the user.
+		// The handlers will need to distinguish this, perhaps by first calling GetByID.
+		return ErrRecordNotFound // Or a more specific "not found or not authorized"
+	}
+
+	return nil
 }
 
-// Delete a habit
-func (m *HabitModel) Delete(id int64) error {
-	query := `DELETE FROM habits WHERE id = $1`
+// Delete a habit for a specific user
+func (m *HabitModel) Delete(id int64, userID int64) error {
+	query := `DELETE FROM habits WHERE id = $1 AND user_id = $2` // Add user_id to WHERE
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := m.DB.ExecContext(ctx, query, id)
-	return err
+	result, err := m.DB.ExecContext(ctx, query, id, userID) // Pass userID
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		// This means the habit ID didn't exist OR it didn't belong to the user.
+		return ErrRecordNotFound // Or a more specific "not found or not authorized"
+	}
+	return nil
 }
 
 // method for toggling completion status
-func (m *HabitModel) ToggleCompletion(id int64) error {
+/*func (m *HabitModel) ToggleCompletion(id int64) error {
 	query := `
 		UPDATE habits
 		SET completed = NOT completed,
@@ -171,9 +212,7 @@ func (m *HabitModel) ToggleCompletion(id int64) error {
 
 	_, err := m.DB.ExecContext(ctx, query, id)
 	return err
-}
-
-// Add these methods to HabitModel in habit.go
+}*/
 
 // GetEntries returns all entries for a habit within a date range
 func (m *HabitModel) GetEntries(habitID int64, from, to time.Time) ([]HabitEntry, error) {

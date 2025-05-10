@@ -17,12 +17,14 @@ type TemplateData struct {
 	Progress             int           // For progress bar
 	Frequency            string        // "daily" or "weekly"
 	Flash                string        // For flash messages
+	IsAuthenticated      bool          // For authentication check
 }
 
 func NewTemplateData() *TemplateData {
 	return &TemplateData{
-		FormErrors: make(map[string]string),
-		FormData:   make(map[string]string),
-		Year:       time.Now().Year(), // Added default year
+		FormErrors:      make(map[string]string),
+		FormData:        make(map[string]string),
+		Year:            time.Now().Year(), // Added default year
+		IsAuthenticated: false,             // Default to false
 	}
 }
