@@ -18,6 +18,7 @@ type TemplateData struct {
 	Frequency            string        // "daily" or "weekly"
 	Flash                string        // For flash messages
 	IsAuthenticated      bool          // For authentication check
+	CSRFToken            string        // CSRF token for forms
 }
 
 func NewTemplateData() *TemplateData {
@@ -26,5 +27,6 @@ func NewTemplateData() *TemplateData {
 		FormData:        make(map[string]string),
 		Year:            time.Now().Year(), // Added default year
 		IsAuthenticated: false,             // Default to false
+		CSRFToken:       "",                // Default to empty string
 	}
 }

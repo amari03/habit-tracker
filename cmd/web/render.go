@@ -1,3 +1,4 @@
+// In cmd/web/render.go
 package main
 
 import (
@@ -6,6 +7,8 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
+
+	"github.com/justinas/nosurf" // Import for nosurf.Token
 )
 
 var bufferPool = sync.Pool{
@@ -14,7 +17,8 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func (app *application) render(w http.ResponseWriter, status int, page string, data *TemplateData) error {
+// Modify render to accept r *http.Request
+func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data *TemplateData) error {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufferPool.Put(buf)
@@ -24,6 +28,11 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 		err := fmt.Errorf("template %s does not exist", page)
 		app.logger.Error("template does not exist", "template", page, "error", err)
 		return err
+	}
+
+	// Add CSRF token to the data if data is not nil
+	if data != nil {
+		data.CSRFToken = nosurf.Token(r)
 	}
 
 	err := ts.Execute(buf, data)
@@ -45,16 +54,15 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 	return nil
 }
 
-func (app *application) renderPartial(w http.ResponseWriter, status int, page string, data any) error {
+// Modify renderPartial to accept r *http.Request
+func (app *application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data any) error {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufferPool.Put(buf)
 
-	// Extract the template name from the path
 	templateName := filepath.Base(page)
 	defineName := ""
 
-	// Determine the define name based on the template
 	switch {
 	case templateName == "habit_form.tmpl":
 		defineName = "habit_form"
@@ -63,22 +71,36 @@ func (app *application) renderPartial(w http.ResponseWriter, status int, page st
 	case templateName == "habit_list.tmpl":
 		defineName = "habit_list"
 	default:
-		// Default to using the filename without extension as the define name
 		defineName = templateName[:len(templateName)-len(filepath.Ext(templateName))]
 	}
 
-	// Look up the template by its filename
-	ts, ok := app.templateCache["daily.tmpl"] // Most partials are used in daily.tmpl
+	// If the data passed to the partial is of type *TemplateData, add the CSRF token.
+	// This is important if a partial itself is a form that will be POSTed (e.g., via HTMX replacing a form).
+	if td, ok := data.(*TemplateData); ok {
+		if td != nil { // Ensure td is not nil
+			td.CSRFToken = nosurf.Token(r)
+		}
+	}
+
+	// Use a more general template base if partials are not always in daily.tmpl context
+	// For simplicity, assuming most partials are defined in files that also include base.tmpl logic
+	// or are rendered into contexts where the main page's template set is available.
+	// If you have truly standalone partials that are not part of any "page", this lookup might need adjustment.
+	// For now, assuming daily.tmpl (or any page template) has all partials defined.
+	ts, ok := app.templateCache["daily.tmpl"] // Or a base template that includes all partials definitions
 	if !ok {
-		err := fmt.Errorf("template for partial %s does not exist", page)
-		app.logger.Error("template for partial does not exist", "template", page, "error", err)
+		// Fallback or error if daily.tmpl doesn't exist or isn't the right container
+		// This might need a more robust way to find the template set containing the partial definition.
+		// A common approach is to parse all partials into all page templates.
+		err := fmt.Errorf("base template for partial %s (tried daily.tmpl) does not exist", page)
+		app.logger.Error("base template for partial does not exist", "template", page, "error", err)
 		return err
 	}
 
 	err := ts.ExecuteTemplate(buf, defineName, data)
 	if err != nil {
-		err = fmt.Errorf("failed to render partial template %s: %w", page, err)
-		app.logger.Error("failed to render partial template", "template", page, "error", err)
+		err = fmt.Errorf("failed to render partial template %s (defined as %s): %w", page, defineName, err)
+		app.logger.Error("failed to render partial template", "template", page, "defineName", defineName, "error", err)
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/justinas/nosurf"
 	"net/http"
 )
 
@@ -47,4 +48,18 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	}
 	// Wrap the handler function so it satisfies the http.Handler interface.
 	return http.HandlerFunc(fn)
+}
+
+// noSurf middleware (Simplified: only checks form field "csrf_token" by default)
+func (app *application) noSurf(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next) // This is the key change back
+
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true, // Your app uses TLS
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	return csrfHandler
 }

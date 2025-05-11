@@ -33,7 +33,7 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	data.IsAuthenticated = true // <<< SET IsAuthenticated
 
-	err := app.render(w, http.StatusOK, "home.tmpl", data)
+	err := app.render(w, r, http.StatusOK, "home.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -46,7 +46,7 @@ func (app *application) landingPageHandler(w http.ResponseWriter, r *http.Reques
 	data.Title = "Welcome" // Title for the landing page
 	// data.Flash = app.session.PopString(r, "flash") // If landing page needs to show flash messages
 
-	err := app.render(w, http.StatusOK, "landing.tmpl", data)
+	err := app.render(w, r, http.StatusOK, "landing.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -97,7 +97,7 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 	templatePageData.IsAuthenticated = true // User is authenticated to see this page
 	templatePageData.Flash = app.session.PopString(r, "flash")
 
-	err = app.render(w, http.StatusOK, frequency+".tmpl", templatePageData)
+	err = app.render(w, r, http.StatusOK, frequency+".tmpl", templatePageData)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -154,7 +154,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		formTemplateData.IsAuthenticated = (userID != 0) // Add this if base template needs it for nav
 
 		if isHTMXRequest(r) {
-			err := app.renderPartial(w, http.StatusUnprocessableEntity, "partials/habit_form.tmpl", formTemplateData)
+			err := app.renderPartial(w, r, http.StatusUnprocessableEntity, "partials/habit_form.tmpl", formTemplateData)
 			if err != nil {
 				app.serverError(w, r, err)
 			}
@@ -169,7 +169,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 				habitPtrs[i] = &habits[i]
 			}
 			formTemplateData.Habits = habitPtrs
-			err := app.render(w, http.StatusUnprocessableEntity, habit.Frequency+".tmpl", formTemplateData)
+			err := app.render(w, r, http.StatusUnprocessableEntity, habit.Frequency+".tmpl", formTemplateData)
 			if err != nil {
 				app.serverError(w, r, err)
 			}
@@ -196,7 +196,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 		// freshFormData.IsAuthenticated = true
 
 		w.Header().Set("HX-Trigger", `{"refreshHabitsList": "#habits-list"}`)
-		err = app.renderPartial(w, http.StatusOK, "partials/habit_form.tmpl", freshFormData)
+		err = app.renderPartial(w, r, http.StatusOK, "partials/habit_form.tmpl", freshFormData)
 		if err != nil {
 			app.serverError(w, r, err)
 		}
@@ -313,7 +313,7 @@ func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request)
 		"goal":        habit.Goal,
 	}
 
-	err = app.render(w, http.StatusOK, "edit.tmpl", editTemplateData)
+	err = app.render(w, r, http.StatusOK, "edit.tmpl", editTemplateData)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -394,7 +394,7 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		// Frequency in FormData should be the one submitted
 		errorTemplateData.FormData["frequency"] = habitToUpdate.Frequency
 
-		err = app.render(w, http.StatusUnprocessableEntity, "edit.tmpl", errorTemplateData)
+		err = app.render(w, r, http.StatusUnprocessableEntity, "edit.tmpl", errorTemplateData)
 		if err != nil {
 			app.serverError(w, r, err)
 		}
@@ -538,7 +538,7 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 	data := NewTemplateData()
 	data.Progress = progress
 	// data.IsAuthenticated = true // If rendering a full page via this route
-	app.render(w, http.StatusOK, "partials/progress_bar.tmpl", data) // Or a full page if needed
+	app.render(w, r, http.StatusOK, "partials/progress_bar.tmpl", data) // Or a full page if needed
 }
 
 func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request) {
@@ -546,7 +546,7 @@ func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request) {
 	data.Title = "Sign Up"
 
 	// signup.tmpl is now a standalone page
-	err := app.render(w, http.StatusOK, "signup.tmpl", data)
+	err := app.render(w, r, http.StatusOK, "signup.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -599,7 +599,7 @@ func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Render the signup page again with errors
-		errRender := app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", formData)
+		errRender := app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", formData)
 		if errRender != nil {
 			app.serverError(w, r, errRender)
 		}
@@ -634,7 +634,7 @@ func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
 				"name":  name,
 				"email": email,
 			}
-			errRender := app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", formData)
+			errRender := app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", formData)
 			if errRender != nil {
 				app.serverError(w, r, errRender)
 			}
@@ -662,7 +662,7 @@ func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
 	data.Flash = app.session.PopString(r, "flash")
 
 	// Note: login.tmpl is now parsed as a standalone page (no nav bar)
-	err := app.render(w, http.StatusOK, "login.tmpl", data)
+	err := app.render(w, r, http.StatusOK, "login.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -699,7 +699,7 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 		data.FormData = map[string]string{"email": email}
 		data.FormErrors = v.Errors
 
-		errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+		errRender := app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", data)
 		if errRender != nil {
 			app.logger.Error("Login: Failed to render login.tmpl on validation error", "render_error", errRender) // <-- ADD THIS
 			app.serverError(w, r, errRender)
@@ -719,7 +719,7 @@ func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
 			data.FormData = map[string]string{"email": email}
 			data.FormErrors = v.Errors
 
-			errRender := app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+			errRender := app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", data)
 			if errRender != nil {
 				app.logger.Error("Login: Failed to render login.tmpl on auth error", "render_error", errRender) // <-- ADD THIS
 				app.serverError(w, r, errRender)

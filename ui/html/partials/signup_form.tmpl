@@ -15,6 +15,7 @@
         id="signup-form"
         method="POST"
         novalidate>
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 
         <!-- Name Field -->
         <div class="form-group">

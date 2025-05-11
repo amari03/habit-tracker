@@ -43,7 +43,7 @@ func (app *application) routes() http.Handler {
 	mux.Handle("POST /habits/update/{frequency}/{id}", app.requireAuthentication(http.HandlerFunc(app.updateHabitHandler)))
 
 	// Delete habit
-	mux.Handle("DELETE /habits/delete/{id}", app.requireAuthentication(http.HandlerFunc(app.deleteHabitHandler)))
+	mux.Handle("POST /habits/delete/{id}", app.requireAuthentication(http.HandlerFunc(app.deleteHabitHandler)))
 
 	// Log entry for habit completion
 	mux.Handle("POST /habits/entries/{id}", app.requireAuthentication(http.HandlerFunc(app.logEntryHandler)))
@@ -53,5 +53,5 @@ func (app *application) routes() http.Handler {
 
 	// The session middleware should wrap everything, then logging, then the mux with its routes.
 	// The requireAuthentication middleware is applied to specific handlers.
-	return app.session.Enable(app.loggingMiddleware(mux))
+	return app.session.Enable(app.noSurf(app.loggingMiddleware(mux)))
 }

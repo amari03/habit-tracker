@@ -6,6 +6,8 @@
 
     <form method="POST" action="/habits/update/{{.Frequency}}/{{.Habit.ID}}" class="edit-form" novalidate>
         <!-- Hidden field to ensure frequency is submitted -->
+         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"> {{/* <<< ADD THIS */}}
+        <!-- Hidden field to ensure frequency is submitted -->
         <input type="hidden" name="original_frequency" value="{{.Frequency}}">
         
         <!-- Title -->

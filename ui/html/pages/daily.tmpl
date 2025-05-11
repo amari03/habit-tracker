@@ -23,11 +23,18 @@
                     </div>
                     <div class="habit-actions">
                         <a href="/habits/edit/{{.Frequency}}/{{.ID}}" class="edit-link">Edit</a>
-                        <button hx-delete="/habits/delete/{{.ID}}"
-                                hx-target="#habit-{{.ID}}"
-                                hx-swap="outerHTML"
-                                hx-confirm="Are you sure you want to delete this habit?"
-                                class="delete-button">Delete</button>
+                         <form hx-post="/habits/delete/{{.ID}}"
+                          hx-target="#habit-{{.ID}}"
+                          hx-swap="outerHTML"
+                          hx-confirm="Are you sure you want to delete this habit?"
+                          style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                        {{/* If your server-side handler for delete strictly expects DELETE method,
+                             you can add this. Otherwise, handling POST for delete is simpler.
+                        <input type="hidden" name="_method" value="DELETE">
+                        */}}
+                        <button type="submit" class="delete-button">Delete</button>
+                    </form>
                     </div>
                 </div>
                 

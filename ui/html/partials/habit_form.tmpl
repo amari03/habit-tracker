@@ -8,6 +8,7 @@
     method="POST"
     novalidate>
 
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <input type="hidden" name="frequency" value="{{if .Frequency}}{{.Frequency}}{{else}}daily{{end}}">
 
     <!-- Title Field -->
