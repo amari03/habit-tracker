@@ -100,10 +100,36 @@ header {
     cursor: pointer;
 }
 
+/* Make app title a link and remove default link styling */
+.app-title-link {
+    text-decoration: none; /* Removes underline from the link around the title */
+    color: inherit; /* Ensures the h1's color is used, not default link blue */
+}
+
 .app-title {
     font-size: 1.25rem;
     font-weight: 700;
     color: #6366f1;
+}
+
+/* New styles for header navigation links */
+.header-nav-links {
+    margin-left: 1.5rem; /* Space it out from the title/menu button */
+    display: flex;
+    align-items: center;
+}
+
+.header-home-link {
+    color: #4b5563; /* A slightly more subdued color than the main title */
+    font-weight: 500;
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.header-home-link:hover {
+    color: #6366f1; /* Highlight on hover */
+    background-color: #f3f4f6; /* Light background on hover */
 }
 
 /* Footer */
@@ -119,25 +145,26 @@ footer {
 
 /* Home page */
 .welcome-card {
-    max-width: 28rem;
+    max-width: 40rem;
     margin-left: auto;
     margin-right: auto;
     margin-top: 2.5rem;
     background-color: white;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    padding: 1.5rem;
+    padding: 2rem;
 }
 
 .welcome-title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 600;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     text-align: center;
 }
 
 .welcome-message {
-    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
     color: #4b5563;
     text-align: center;
 }
@@ -145,7 +172,7 @@ footer {
 .button-container {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 2rem;
 }
 
 @media (max-width: 640px) {
@@ -157,12 +184,13 @@ footer {
 .primary-button {
     background-color: #6366f1;
     color: white;
-    padding: 0.75rem 1.5rem;
+    padding: 0.875rem 1.75rem;
     border-radius: 0.5rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     text-align: center;
     display: inline-block;
     width: 100%;
+    font-size: 1rem;
 }
 
 .primary-button:hover {
@@ -278,6 +306,7 @@ footer {
     border: 1px solid #d1d5db;
     border-radius: 0.25rem;
     padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
 }
 
 .form-textarea {
@@ -286,6 +315,7 @@ footer {
     border-radius: 0.25rem;
     padding: 0.5rem 0.75rem;
     height: 5rem;
+    box-sizing: border-box;
 }
 
 .form-button-container {
@@ -300,6 +330,7 @@ footer {
     border-radius: 0.25rem;
     border: none;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
 .submit-button:hover {
@@ -493,6 +524,7 @@ footer {
     border-radius: 0.25rem;
     border: none;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
 .save-button:hover {
@@ -593,6 +625,7 @@ footer {
 }
 
 .styled-form .form-input {
+    box-sizing: border-box;
     width: 100%;
     border: 1px solid #d1d5db;
     border-radius: 0.25rem; /* Consistent with your existing .form-input */
@@ -607,6 +640,7 @@ footer {
 }
 
 .styled-form .submit-button {
+    box-sizing: border-box;
     width: 100%; /* Make button full width in auth forms */
     background-color: #6366f1; /* Consistent with your .submit-button */
     color: white;

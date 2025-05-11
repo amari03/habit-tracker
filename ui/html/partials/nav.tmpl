@@ -1,23 +1,15 @@
 {{define "nav"}}
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <h1 class="app-title">Habit Tracker</h1>
-        <button id="closeNav" class="menu-button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-    </div>
+    <!-- ... existing sidebar content ... -->
     <div class="sidebar-links">
         {{if .IsAuthenticated}}
-            <a href="/apphome" class="sidebar-link">Dashboard</a> {{/* Changed from "/" to "/apphome" */}}
+            <a href="/apphome" class="sidebar-link">Dashboard</a>
             <a href="/daily" class="sidebar-link">Daily</a>
             <a href="/weekly" class="sidebar-link">Weekly</a>
             <hr class="sidebar-divider">
             <a href="/user/logout" class="sidebar-link">Logout</a>
         {{else}}
-            <a href="/" class="sidebar-link">Welcome</a> {{/* Link to public landing page */}}
+            <a href="/" class="sidebar-link">Welcome</a>
             <hr class="sidebar-divider">
             <a href="/user/login" class="sidebar-link">Login</a>
             <a href="/user/signup" class="sidebar-link">Sign Up</a>
@@ -27,7 +19,7 @@
 
 <header>
     <div class="container header-content">
-        {{if .IsAuthenticated}} {{/* Only show menu button if authenticated and nav has content */}}
+        {{if .IsAuthenticated}}
         <button id="openNav" class="menu-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -36,9 +28,19 @@
             </svg>
         </button>
         {{end}}
-        <h1 class="app-title">Habit Tracker</h1>
+        <a href="{{if .IsAuthenticated}}/apphome{{else}}/{{end}}" class="app-title-link"> <!-- Make title a link -->
+            <h1 class="app-title">Habit Tracker</h1>
+        </a>
+
+        {{if .IsAuthenticated}}
+        <div class="header-nav-links"> <!-- New container for explicit links -->
+            <a href="/apphome" class="header-home-link">Dashboard</a>
+            <!-- You could add other primary navigation links here if needed in the future -->
+        </div>
+        {{end}}
+
         {{if not .IsAuthenticated}}
-        <div style="margin-left: auto;"> {{/* Basic styling to push to the right */}}
+        <div style="margin-left: auto;">
             <a href="/user/login" style="margin-right: 10px; color: #6366f1; text-decoration: none;">Login</a>
             <a href="/user/signup" style="color: #6366f1; text-decoration: none;">Sign Up</a>
         </div>
