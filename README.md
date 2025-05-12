@@ -4,17 +4,17 @@
 A web-based habit tracking application that helps users build and maintain daily and weekly habits. Built with Go (Golang) for the backend and HTML/HTMX for a responsive frontend.
 ✨ Features
 
+    Signup and Login
+
     Track daily and weekly habits
 
     Mark habits as completed/skipped
 
-    Progress tracking with visual indicators (still a working progress)
+    Progress tracking with visual indicators 
 
     Create, edit, and delete habits
 
-    Simple, intuitive interface
-
-**Note:** when you submit an entry and it doesn't appear, please refresh the page. 
+    Simple, intuitive interface 
 
 🛠️ Technologies
 
@@ -42,4 +42,4 @@ Tables include:
 
     habit_entries
 
-    users (for future auth,table can be updated too)
+    users
