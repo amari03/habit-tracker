@@ -1,6 +1,9 @@
 {{define "progress_bar"}}
 <div class="progress-container"
-     {{if .Progress}}hx-get="/daily/progress" hx-trigger="every 5s"{{end}}>
-    <div class="progress-bar" style="width: {{.Progress}}%;"></div>
+     hx-get="/{{.Frequency}}/progress" 
+     hx-trigger="load, every 10s" {{/* 'load' will fetch initial state if JS is enabled, or use server-rendered .Progress */}}
+     hx-swap="innerHTML">
+    {{/* Initial rendering from server-side .Progress */}}
+    <div class="progress-bar" style="width: {{.Progress}}%;">{{.Progress}}%</div>
 </div>
 {{end}}

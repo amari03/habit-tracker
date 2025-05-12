@@ -1,72 +1,17 @@
-{{define "title"}}Weekly Habits{{end}}
+{{define "title"}}Create Weekly Habit{{end}}
 
 {{define "content"}}
-    <section class="main-content">
-        <h2 class="page-title">Weekly Habits to Complete</h2>
-        
-        {{template "progress_bar" .}}
+<section class="main-content">
+    <h2 class="page-title">Create a New Weekly Habit</h2>
 
-        <!--  Habit Creation Form Container -->
-        <div id="habit-form-container">
-            {{template "habit_form" .}}
-        </div>
-
-        <!-- Habit List with Tracking -->
-        <div id="habits-list" hx-get="/weekly" hx-trigger="refreshHabitsList from:body" hx-select="#habits-list" hx-swap="innerHTML">
-            {{range .Habits}}
-            <div class="habit-card" id="habit-{{.ID}}">
-                <div class="habit-header">
-                    <div class="habit-content">
-                        <h3 class="habit-title">{{.Title}}</h3>
-                        {{if .Description}}<p class="habit-description">{{.Description}}</p>{{end}}
-                        {{if .Goal}}<p class="habit-goal">Goal: {{.Goal}}</p>{{end}}
-                    </div>
-                    <div class="habit-actions">
-                        <a href="/habits/edit/{{.Frequency}}/{{.ID}}" class="edit-link">Edit</a>
-                        <form hx-post="/habits/delete/{{.ID}}"
-                          hx-target="#habit-{{.ID}}"
-                          hx-swap="outerHTML"
-                          hx-confirm="Are you sure you want to delete this habit?"
-                          style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
-                        <button type="submit" class="delete-button">Delete</button>
-                    </form>
-                    </div>
-                </div>
-                
-                <!-- Weekly Check-in -->
-                <div class="check-in-container">
-                    {{template "weekly_checkin" .}}
-                </div>
-            </div>
-            {{else}}
-            <p class="empty-message">No weekly habits yet. Create your first habit above!</p>
-            {{end}}
-        </div>
-    </section>
-</div>
-{{end}}
-
-<!-- Weekly Check-in Partial -->
-{{define "weekly_checkin"}}
-<div hx-get="/habits/{{.ID}}/checkin" hx-trigger="load">
-    <!-- HTMX will load check-in status here -->
-    <div class="check-in-group">
-        <span class="check-in-label">This Week:</span>
-                <button hx-post="/habits/entries/{{.ID}}" 
-                hx-vars='{"status":"completed"}'
-                hx-target="#habits-list"
-                hx-swap="innerHTML"
-                class="done-button">
-            ✅ Done
-        </button>
-        <button hx-post="/habits/entries/{{.ID}}" 
-                hx-vars='{"status":"skipped"}'
-                hx-target="#habits-list"
-                hx-swap="innerHTML"
-                class="skip-button">
-            ⏸ Skip
-        </button>
+    <!-- Habit Creation Form Container -->
+    <div id="habit-form-container">
+        {{template "habit_form" .}}
     </div>
-</div>
+
+    <div style="margin-top: 2rem;">
+        <a href="/weekly/entries" class="view-entries-button">View Weekly Habits & Entries</a>
+    </div>
+    
+</section>
 {{end}}

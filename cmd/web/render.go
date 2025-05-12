@@ -1,11 +1,10 @@
-// In cmd/web/render.go
 package main
 
 import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	//"path/filepath"
 	"sync"
 
 	"github.com/justinas/nosurf" // Import for nosurf.Token
@@ -54,6 +53,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	return nil
 }
 
+/*
 // Modify renderPartial to accept r *http.Request
 func (app *application) renderPartial(w http.ResponseWriter, r *http.Request, status int, page string, data any) error {
 	buf := bufferPool.Get().(*bytes.Buffer)
@@ -115,4 +115,4 @@ func (app *application) renderPartial(w http.ResponseWriter, r *http.Request, st
 	}
 
 	return nil
-}
+}*/

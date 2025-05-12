@@ -24,6 +24,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 			ts, parseErr = template.ParseFiles(page)
 		} else {
 			// Assume other pages use base.tmpl
+			// This includes daily.tmpl, weekly.tmpl, and the new entries.tmpl
 			ts, parseErr = template.ParseFiles("ui/html/base.tmpl", page)
 		}
 
@@ -31,6 +32,10 @@ func newTemplateCache() (map[string]*template.Template, error) {
 			return nil, parseErr
 		}
 
+		// Parse all partials into every template set that uses base.tmpl
+		// Standalone pages might also need some partials (like login_form in login.tmpl)
+		// For simplicity, parse all partials into all templates.
+		// More refined logic could be used if performance becomes an issue with many partials.
 		ts, parseErr = ts.ParseGlob("ui/html/partials/*.tmpl")
 		if parseErr != nil {
 			return nil, parseErr

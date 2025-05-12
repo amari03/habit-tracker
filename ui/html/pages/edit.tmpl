@@ -5,16 +5,14 @@
     <h2 class="edit-title">Edit Habit</h2>
 
     <form method="POST" action="/habits/update/{{.Frequency}}/{{.Habit.ID}}" class="edit-form" novalidate>
-        <!-- Hidden field to ensure frequency is submitted -->
-         <input type="hidden" name="csrf_token" value="{{.CSRFToken}}"> {{/* <<< ADD THIS */}}
-        <!-- Hidden field to ensure frequency is submitted -->
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
         <input type="hidden" name="original_frequency" value="{{.Frequency}}">
         
         <!-- Title -->
         <div class="form-group">
-            <label for="title" class="form-label">Title*</label>
+            <label for="title" class="form-label">Title</label>
             <input type="text" id="title" name="title"
-                   value="{{.Habit.Title}}" 
+                   value="{{index .FormData "title"}}" 
                    class="form-input {{if index .FormErrors "title"}}invalid{{end}}">
             {{with index .FormErrors "title"}}
                 <div class="error">{{.}}</div>
@@ -25,7 +23,7 @@
         <div class="form-group">
             <label for="description" class="form-label">Description</label>
             <textarea id="description" name="description"
-                      class="form-textarea {{if index .FormErrors "description"}}invalid{{end}}">{{.Habit.Description}}</textarea>
+                      class="form-textarea {{if index .FormErrors "description"}}invalid{{end}}">{{index .FormData "description"}}</textarea>
             {{with index .FormErrors "description"}}
                 <div class="error">{{.}}</div>
             {{end}}
@@ -35,22 +33,26 @@
         <div class="form-group">
             <label class="form-label">Frequency*</label>
             <div class="frequency-grid">
+                {{$selectedFrequency := index .FormData "frequency"}}
                 {{range $val := .PermittedFrequencies}}
-                <label class="frequency-option {{if eq $.Habit.Frequency $val}}selected{{end}}">
+                <label class="frequency-option {{if eq $selectedFrequency $val}}selected{{end}}">
                     <input type="radio" name="frequency" value="{{$val}}" 
-                           {{if eq $.Habit.Frequency $val}}checked{{end}}
+                           {{if eq $selectedFrequency $val}}checked{{end}}
                            class="frequency-radio">
                     <span class="frequency-label">{{$val}}</span>
                 </label>
                 {{end}}
             </div>
+             {{with index .FormErrors "frequency"}}
+                <div class="error">{{.}}</div>
+            {{end}}
         </div>
 
         <!-- Goal -->
         <div class="form-group">
             <label for="goal" class="form-label">Goal</label>
             <input type="text" id="goal" name="goal" 
-                   value="{{.Habit.Goal}}"
+                   value="{{index .FormData "goal"}}"
                    placeholder="e.g., '3 times/week'" 
                    class="form-input {{if index .FormErrors "goal"}}invalid{{end}}">
             {{with index .FormErrors "goal"}}
@@ -59,7 +61,7 @@
         </div>
 
         <div class="form-actions">
-            <a href="/{{.Habit.Frequency}}" class="cancel-link">Cancel</a>
+            <a href="/{{.Habit.Frequency}}/entries" class="cancel-link">Cancel</a>
             <button type="submit" class="save-button">
                 Save Changes
             </button>

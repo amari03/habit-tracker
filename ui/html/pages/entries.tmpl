@@ -1,0 +1,83 @@
+{{define "title"}}{{.Title}}{{end}}
+
+{{define "content"}}
+<section class="main-content">
+    <div class="page-header-actions">
+        <h2 class="page-title">{{.Frequency}} Habits Entries</h2>
+        <a href="/{{.Frequency}}" class="view-entries-button create-new-top-button">Create New {{.Frequency}} Habit</a>
+    </div>
+
+    {{if .Flash}}
+        <div class="flash-message success">{{.Flash}}</div>
+    {{end}}
+
+    {{/* Pass the current dot context to progress_bar, which includes Progress, Frequency, CSRFToken, IsAuthenticated */}}
+    {{template "progress_bar" .}}
+
+    <table class="habit-entries-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Goal</th>
+                <th>Status ({{if eq .Frequency "daily"}}Today{{else}}This Week{{end}})</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="habit-entries-list">
+            {{range .Habits}}
+            <tr id="habit-row-{{.ID}}">
+                <td>{{.Title}}</td>
+                <td>{{.Description}}</td>
+                <td>{{.Goal}}</td>
+                <td class="status-cell">
+                    <button hx-post="/habits/entries/{{.ID}}"
+                            hx-vals='{"status":"completed", "csrf_token": "{{$.CSRFToken}}"}'
+                            hx-indicator="#habit-row-{{.ID}}" 
+                            class="done-button {{if eq .TodayStatus "completed"}}active{{end}}">
+                        Done
+                    </button>
+                    <button hx-post="/habits/entries/{{.ID}}"
+                            hx-vals='{"status":"skipped", "csrf_token": "{{$.CSRFToken}}"}'
+                            hx-indicator="#habit-row-{{.ID}}"
+                            class="skip-button {{if eq .TodayStatus "skipped"}}active{{end}}">
+                        Skip
+                    </button>
+                    {{if .TodayStatus}}
+                        <span class="status-text">Current: {{.TodayStatus}}</span>
+                    {{else}}
+                        <span class="status-text">Pending</span>
+                    {{end}}
+                </td>
+                <td class="actions-cell">
+                    <a href="/habits/edit/{{.Frequency}}/{{.ID}}" class="edit-link">Edit</a>
+                    <form hx-post="/habits/delete/{{$.Frequency}}/{{.ID}}"
+                          hx-target="#habit-row-{{.ID}}"
+                          hx-swap="outerHTML"
+                          hx-confirm="Are you sure you want to delete '{{.Title}}'?"
+                          style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                        <button type="submit" class="delete-button">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 1rem;">
+                    No {{.Frequency}} habits found. 
+                    <a href="/{{.Frequency}}" class="link-style">Create your first one!</a>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+
+    {{/* Button was moved from here to the top */}}
+    {{/*
+    <div style="margin-top: 2rem;">
+         <a href="/{{.Frequency}}" class="view-entries-button">Create New {{.Frequency}} Habit</a>
+    </div>
+    */}}
+
+</section>
+{{end}}

@@ -6,6 +6,7 @@ import (
 	//"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/amari03/habit-tracker/internal/data"
@@ -24,14 +25,9 @@ func (app *application) authenticatedUserID(r *http.Request) int64 {
 
 // homeHandler renders the home page
 func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
-	// You might still want the userID if this page needs to display user-specific info
-	// userID := app.authenticatedUserID(r)
-	// app.logger.Info("Home page for user", "userID", userID)
-
 	data := NewTemplateData()
 	data.Title = "Home"
-
-	data.IsAuthenticated = true // <<< SET IsAuthenticated
+	data.IsAuthenticated = true
 
 	err := app.render(w, r, http.StatusOK, "home.tmpl", data)
 	if err != nil {
@@ -41,10 +37,8 @@ func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 // landingHandler renders the landing page
 func (app *application) landingPageHandler(w http.ResponseWriter, r *http.Request) {
-
 	data := NewTemplateData()
-	data.Title = "Welcome" // Title for the landing page
-	// data.Flash = app.session.PopString(r, "flash") // If landing page needs to show flash messages
+	data.Title = "Welcome"
 
 	err := app.render(w, r, http.StatusOK, "landing.tmpl", data)
 	if err != nil {
@@ -52,8 +46,48 @@ func (app *application) landingPageHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// habitsHandler shows habits by frequency (daily/weekly) for the authenticated user
-func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
+// showHabitFormPageHandler renders the page with the habit creation form (daily.tmpl or weekly.tmpl)
+func (app *application) showHabitFormPageHandler(w http.ResponseWriter, r *http.Request) {
+	userID := app.authenticatedUserID(r)
+	if userID == 0 {
+		// This should be caught by requireAuthentication middleware, but good practice
+		app.clientError(w, http.StatusUnauthorized)
+		return
+	}
+
+	var frequency string
+	var templateName string
+
+	// Determine frequency from URL path
+	// Note: r.URL.Path will be like "/daily" or "/weekly"
+	switch r.URL.Path {
+	case "/daily":
+		frequency = "daily"
+		templateName = "daily.tmpl"
+	case "/weekly":
+		frequency = "weekly"
+		templateName = "weekly.tmpl"
+	default:
+		app.notFound(w)
+		return
+	}
+
+	templatePageData := NewTemplateData()
+	templatePageData.Title = "Create " + frequency + " Habit"
+	templatePageData.Frequency = frequency
+	templatePageData.IsAuthenticated = true // User is authenticated
+	templatePageData.Flash = app.session.PopString(r, "flash")
+	// FormData and FormErrors might be needed if we redirect back to this form page with errors from elsewhere
+	// For a fresh form, they'll be empty/nil which is fine.
+
+	err := app.render(w, r, http.StatusOK, templateName, templatePageData)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+}
+
+// showHabitEntriesPageHandler renders the page displaying habit entries in a table
+func (app *application) showHabitEntriesPageHandler(w http.ResponseWriter, r *http.Request) {
 	userID := app.authenticatedUserID(r)
 	if userID == 0 {
 		app.clientError(w, http.StatusUnauthorized)
@@ -61,18 +95,16 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var frequency string
-	switch r.URL.Path {
-	case "/daily":
-		frequency = "daily"
-	case "/weekly":
-		frequency = "weekly"
-	default:
-		app.notFound(w) // Or redirect to /apphome or /user/login
+	// Example path: /daily/entries or /weekly/entries
+	// We need to extract "daily" or "weekly"
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 2 || (pathParts[0] != "daily" && pathParts[0] != "weekly") || pathParts[1] != "entries" {
+		app.notFound(w)
 		return
 	}
+	frequency = pathParts[0]
 
-	// Fetch habits for the specific user and frequency
-	habits, err := app.habits.GetAllByFrequency(userID, frequency) // <<< PASS userID
+	habits, err := app.habits.GetAllByFrequency(userID, frequency)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -81,23 +113,36 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 	habitPtrs := make([]*data.Habit, len(habits))
 	today := time.Now().Format("2006-01-02")
 
+	var completedForProgress, totalForProgress int
 	for i := range habits {
 		habitPtrs[i] = &habits[i]
-		// Fetching entries remains the same, as it's by habit.ID
-		entries, err := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now())
-		if err == nil && len(entries) > 0 && entries[0].EntryDate.Format("2006-01-02") == today {
-			habitPtrs[i].TodayStatus = entries[0].Status
+		entries, entryErr := app.habits.GetEntries(habits[i].ID, time.Now(), time.Now()) // Get today's entries
+		if entryErr == nil && len(entries) > 0 {
+			// Assuming GetEntries orders by date desc, so first entry is the latest for the day
+			if entries[0].EntryDate.Format("2006-01-02") == today {
+				habitPtrs[i].TodayStatus = entries[0].Status
+				if entries[0].Status == "completed" {
+					completedForProgress++
+				}
+			}
 		}
+		totalForProgress++
+	}
+
+	currentProgress := 0
+	if totalForProgress > 0 {
+		currentProgress = (completedForProgress * 100) / totalForProgress
 	}
 
 	templatePageData := NewTemplateData()
-	templatePageData.Title = frequency + " Habits"
+	templatePageData.Title = frequency + " Habits Entries"
 	templatePageData.Habits = habitPtrs
 	templatePageData.Frequency = frequency
-	templatePageData.IsAuthenticated = true // User is authenticated to see this page
+	templatePageData.IsAuthenticated = true
+	templatePageData.Progress = currentProgress // Initial progress for the page
 	templatePageData.Flash = app.session.PopString(r, "flash")
 
-	err = app.render(w, r, http.StatusOK, frequency+".tmpl", templatePageData)
+	err = app.render(w, r, http.StatusOK, "entries.tmpl", templatePageData)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -107,43 +152,29 @@ func (app *application) habitsHandler(w http.ResponseWriter, r *http.Request) {
 func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Request) {
 	userID := app.authenticatedUserID(r)
 	if userID == 0 {
-		// If you have a middleware for authentication, this might be redundant,
-		// but it's a good safeguard.
-		app.clientError(w, http.StatusUnauthorized) // Or redirect to login
+		app.clientError(w, http.StatusUnauthorized)
 		return
 	}
 
-	app.logger.Info("Create habit request received", "method", r.Method, "url", r.URL, "userID", userID)
-
 	err := r.ParseForm()
 	if err != nil {
-		app.logger.Error("Failed to parse form", "error", err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
 	habit := &data.Habit{
-		UserID:      userID, // <<< SET UserID HERE
+		UserID:      userID,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 		Frequency:   r.FormValue("frequency"),
 		Goal:        r.FormValue("goal"),
 	}
 
-	app.logger.Info("Habit data received",
-		"userID", habit.UserID,
-		"title", habit.Title,
-		"description", habit.Description,
-		"frequency", habit.Frequency,
-		"goal", habit.Goal)
-
 	v := validator.NewValidator()
-	data.ValidateHabit(v, habit) // ValidateHabit itself doesn't change for UserID
+	data.ValidateHabit(v, habit)
 
 	if !v.ValidData() {
-		// ... (error handling for validation remains largely the same)
-		// Ensure you are creating NewTemplateData and passing it correctly
-		formTemplateData := NewTemplateData() // Use your constructor
+		formTemplateData := NewTemplateData()
 		formTemplateData.FormErrors = v.Errors
 		formTemplateData.FormData = map[string]string{
 			"title":       habit.Title,
@@ -151,57 +182,50 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 			"goal":        habit.Goal,
 		}
 		formTemplateData.Frequency = habit.Frequency
-		formTemplateData.IsAuthenticated = (userID != 0) // Add this if base template needs it for nav
+		formTemplateData.IsAuthenticated = (userID != 0)
+		formTemplateData.Title = "Create " + habit.Frequency + " Habit - Error"
 
-		if isHTMXRequest(r) {
-			err := app.renderPartial(w, r, http.StatusUnprocessableEntity, "partials/habit_form.tmpl", formTemplateData)
-			if err != nil {
-				app.serverError(w, r, err)
-			}
+		// Determine which template to re-render (daily.tmpl or weekly.tmpl)
+		var formTemplateName string
+		if habit.Frequency == "daily" {
+			formTemplateName = "daily.tmpl"
+		} else if habit.Frequency == "weekly" {
+			formTemplateName = "weekly.tmpl"
 		} else {
-			// Fallback full render - you might need to decide which page to render here
-			// e.g., if frequency is known, render that page.
-			// For simplicity, let's assume daily for now if it's a full page error.
-			formTemplateData.Title = habit.Frequency + " Habits - Error"
-			habits, _ := app.habits.GetAllByFrequency(userID, habit.Frequency) // Fetch habits for the current user to display the page correctly
-			habitPtrs := make([]*data.Habit, len(habits))
-			for i := range habits {
-				habitPtrs[i] = &habits[i]
-			}
-			formTemplateData.Habits = habitPtrs
-			err := app.render(w, r, http.StatusUnprocessableEntity, habit.Frequency+".tmpl", formTemplateData)
-			if err != nil {
-				app.serverError(w, r, err)
-			}
+			app.serverError(w, r, errors.New("invalid frequency on validation error"))
+			return
+		}
+
+		// For HTMX, re-render the form part within its original page context
+		// For non-HTMX, re-render the whole form page
+		// Since the form is simpler now, re-rendering the whole page with errors is fine.
+		// The HX-Target on the form in daily/weekly.tmpl points to #habit-form-container,
+		// which is part of daily/weekly.tmpl.
+		// So, if HTMX, we should render the form partial into daily/weekly.tmpl context.
+		// For simplicity, we will re-render the entire daily.tmpl or weekly.tmpl with errors.
+
+		err := app.render(w, r, http.StatusUnprocessableEntity, formTemplateName, formTemplateData)
+		if err != nil {
+			app.serverError(w, r, err)
 		}
 		return
 	}
 
-	err = app.habits.Insert(habit) // Insert now includes UserID
+	err = app.habits.Insert(habit)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
 
-	// On success, refresh the list or redirect
-	// The logic for HTMX refresh or full redirect can remain similar,
-	// but ensure the refreshed list also considers the userID.
+	app.session.Put(r, "flash", "Habit created successfully!")
 
-	// If HTMX, return a fresh form and trigger list refresh
+	// Redirect to the entries page for the habit's frequency
+	redirectURL := "/" + habit.Frequency + "/entries"
 	if isHTMXRequest(r) {
-		freshFormData := NewTemplateData()
-		freshFormData.FormData = map[string]string{
-			"frequency": habit.Frequency, // Preserve frequency for the new form
-		}
-		// freshFormData.IsAuthenticated = true
-
-		w.Header().Set("HX-Trigger", `{"refreshHabitsList": "#habits-list"}`)
-		err = app.renderPartial(w, r, http.StatusOK, "partials/habit_form.tmpl", freshFormData)
-		if err != nil {
-			app.serverError(w, r, err)
-		}
+		w.Header().Set("HX-Redirect", redirectURL)
+		w.WriteHeader(http.StatusOK) // Or 204 if no content needed, but HX-Redirect implies client handles it
 	} else {
-		http.Redirect(w, r, "/"+habit.Frequency, http.StatusSeeOther)
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	}
 }
 
@@ -219,7 +243,6 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// <<< AUTHORIZATION CHECK: Verify the habit belongs to the current user >>>
 	habit, err := app.habits.GetByID(habitID)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
@@ -230,33 +253,30 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if habit.UserID != userID {
-		app.logger.Warn("Forbidden access attempt to log entry for habit", "habitID", habitID, "requesterUserID", userID)
-		app.notFound(w) // Or app.clientError(w, http.StatusForbidden)
+		app.notFound(w)
 		return
 	}
 
-	// Now that we've confirmed the habit belongs to the user, proceed
 	entry := &data.HabitEntry{
-		HabitID:   habitID, // Use the validated habitID
+		HabitID:   habitID,
 		EntryDate: time.Now(),
-		Status:    r.FormValue("status"), // "completed" or "skipped"
+		Status:    r.FormValue("status"),
 		Notes:     r.FormValue("notes"),
 	}
 
-	err = app.habits.LogEntry(entry) // This method is on HabitModel but operates on habit_entries table
+	err = app.habits.LogEntry(entry)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
 
+	redirectURL := "/" + habit.Frequency + "/entries"
 	if isHTMXRequest(r) {
-		w.Header().Set("HX-Trigger", `{"refreshHabitsList": "#habits-list"}`)
+		// Instead of HX-Trigger, redirecting to refresh the page is simpler given the structure change
+		w.Header().Set("HX-Redirect", redirectURL)
 		w.WriteHeader(http.StatusOK)
 	} else {
-		// For non-HTMX, redirect back to the page they were on.
-		// HX-Current-URL is an HTMX header. For general cases, Referer might be an option,
-		// or redirect to a known page like /daily or /weekly based on habit.Frequency.
-		http.Redirect(w, r, "/"+habit.Frequency, http.StatusSeeOther)
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	}
 }
 
@@ -268,7 +288,7 @@ func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	frequencyPathValue := r.PathValue("frequency") // Renamed to avoid conflict with templateData.Frequency
+	frequencyPathValue := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -290,26 +310,21 @@ func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// <<< AUTHORIZATION CHECK >>>
 	if habit.UserID != userID {
-		app.logger.Warn("Forbidden access attempt to edit habit", "habitID", habit.ID, "habitUserID", habit.UserID, "requesterUserID", userID)
-		app.notFound(w) // Treat as not found to avoid leaking info
+		app.notFound(w)
 		return
 	}
 
 	editTemplateData := NewTemplateData()
 	editTemplateData.Title = "Edit Habit"
 	editTemplateData.Habit = habit
-	editTemplateData.Frequency = frequencyPathValue // Use the path value for the form's context
+	editTemplateData.Frequency = frequencyPathValue // This is the context of the edit page, habit.Frequency is the current value
 	editTemplateData.PermittedFrequencies = []string{"daily", "weekly"}
 	editTemplateData.IsAuthenticated = true
-
-	// Repopulate FormData if coming from a failed update attempt (though less common for GET)
-	// Or, you might want to populate FormData from the habit itself for the initial edit form display.
 	editTemplateData.FormData = map[string]string{
 		"title":       habit.Title,
 		"description": habit.Description,
-		"frequency":   habit.Frequency, // current frequency of the habit
+		"frequency":   habit.Frequency,
 		"goal":        habit.Goal,
 	}
 
@@ -327,7 +342,7 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	frequencyPathValue := r.PathValue("frequency") // Original frequency from path
+	frequencyPathValue := r.PathValue("frequency") // Original frequency from path (context of edit page)
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -340,19 +355,15 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Create habit struct with form data
 	habitToUpdate := &data.Habit{
 		ID:          id,
-		UserID:      userID, // <<< SET UserID for the update operation
+		UserID:      userID,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 		Frequency:   r.FormValue("frequency"), // New frequency from form
 		Goal:        r.FormValue("goal"),
 	}
 
-	// First, verify ownership by fetching the original habit (optional but safer before validation)
-	// Alternatively, the Model.Update includes UserID in its WHERE clause.
-	// For thoroughness, let's ensure the habit exists and belongs to the user before attempting to validate/update.
 	originalHabit, err := app.habits.GetByID(id)
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
@@ -363,37 +374,26 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if originalHabit.UserID != userID {
-		app.logger.Warn("Forbidden access attempt to update habit", "habitID", id, "requesterUserID", userID)
-		app.notFound(w) // Or app.clientError(w, http.StatusForbidden)
+		app.notFound(w)
 		return
 	}
 
 	v := validator.NewValidator()
-	data.ValidateHabit(v, habitToUpdate) // Validate the new data
+	data.ValidateHabit(v, habitToUpdate)
 	if !v.ValidData() {
 		errorTemplateData := NewTemplateData()
+		errorTemplateData.Title = "Edit Habit - Error"
 		errorTemplateData.FormErrors = v.Errors
-		errorTemplateData.Habit = habitToUpdate // Pass the data with errors back to the form
-		// Ensure the .Habit in edit.tmpl reflects the current values from habitToUpdate for repopulation
-		errorTemplateData.Frequency = frequencyPathValue // The original frequency context of the edit page
+		errorTemplateData.Habit = habitToUpdate          // Pass the data with errors back to the form
+		errorTemplateData.Frequency = frequencyPathValue // Original frequency context of the edit page
 		errorTemplateData.PermittedFrequencies = []string{"daily", "weekly"}
 		errorTemplateData.IsAuthenticated = true
-
-		// Repopulate FormData for the template
-		formData := make(map[string]string)
-		for key, values := range r.PostForm { // Use r.PostForm to get all submitted values
-			if len(values) > 0 {
-				formData[key] = values[0]
-			}
+		errorTemplateData.FormData = map[string]string{
+			"title":       habitToUpdate.Title,
+			"description": habitToUpdate.Description,
+			"frequency":   habitToUpdate.Frequency,
+			"goal":        habitToUpdate.Goal,
 		}
-		errorTemplateData.FormData = formData
-		// Override with values from habitToUpdate for consistency if needed
-		errorTemplateData.FormData["title"] = habitToUpdate.Title
-		errorTemplateData.FormData["description"] = habitToUpdate.Description
-		errorTemplateData.FormData["goal"] = habitToUpdate.Goal
-		// Frequency in FormData should be the one submitted
-		errorTemplateData.FormData["frequency"] = habitToUpdate.Frequency
-
 		err = app.render(w, r, http.StatusUnprocessableEntity, "edit.tmpl", errorTemplateData)
 		if err != nil {
 			app.serverError(w, r, err)
@@ -401,21 +401,18 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Perform the update. Model.Update now takes habit *Habit which includes UserID
-	// and the SQL query will have `WHERE id = $X AND user_id = $Y`
 	err = app.habits.Update(habitToUpdate)
 	if err != nil {
-		if errors.Is(err, data.ErrRecordNotFound) { // If Model.Update returns this (e.g. 0 rows affected)
-			app.notFound(w) // Habit might have been deleted by another request or didn't match user
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.notFound(w)
 		} else {
 			app.serverError(w, r, err)
 		}
 		return
 	}
 
-	// Redirect to the page of the *new* frequency of the habit
 	app.session.Put(r, "flash", "Habit updated successfully.")
-	http.Redirect(w, r, "/"+habitToUpdate.Frequency, http.StatusSeeOther)
+	http.Redirect(w, r, "/"+habitToUpdate.Frequency+"/entries", http.StatusSeeOther)
 }
 
 // deleteHabitHandler removes a habit if it belongs to the user
@@ -426,55 +423,50 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Get frequency and id from path
+	frequency := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		app.logger.Error("Invalid habit ID for delete", "error", err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+	if frequency != "daily" && frequency != "weekly" {
+		app.notFound(w)
+		return
+	}
 
-	// Optional: Fetch habit first to log its details or ensure it exists before delete attempt
-	// habit, err := app.habits.GetByID(id)
-	// if err != nil { ... handle not found ... }
-	// if habit.UserID != userID { ... handle forbidden ... return }
-
-	app.logger.Info("Attempting to delete habit", "id", id, "userID", userID)
-
-	// Model.Delete now takes id and userID
 	err = app.habits.Delete(id, userID)
 	if err != nil {
-		app.logger.Error("Failed to delete habit", "id", id, "userID", userID, "error", err)
 		if errors.Is(err, data.ErrRecordNotFound) {
-			// This means the habit didn't exist or didn't belong to the user.
-			// For a DELETE request, responding with 200 OK or 204 No Content is often fine
-			// even if the resource was already gone, to make it idempotent.
-			// Or, if HTMX expects a specific target to be removed, a 404 might break HTMX.
-			// If it's an HTMX request, just returning OK might be best so HTMX can remove the element.
 			if isHTMXRequest(r) {
-				w.WriteHeader(http.StatusOK)
+				// If HTMX expects the element to be gone, a 200 OK is fine.
+				// The target row won't exist anymore, so HTMX swap won't find it.
+				// Or, return an empty response if hx-swap="outerHTML" and target is the row.
+				w.WriteHeader(http.StatusOK) // Let HTMX remove the element.
 				return
 			}
-			app.notFound(w) // For non-HTMX, a 404 is clearer.
+			app.notFound(w)
 		} else {
 			app.serverError(w, r, err)
 		}
 		return
 	}
 
-	app.logger.Info("Habit deleted successfully", "id", id, "userID", userID)
+	app.session.Put(r, "flash", "Habit deleted successfully.")
+	redirectURL := "/" + frequency + "/entries"
 
 	if isHTMXRequest(r) {
-		// For HTMX, typically you'd have swapped out the element or a parent.
-		// Returning 200 OK is usually sufficient as the hx-swap would have handled the UI.
+		// For DELETE, HTMX typically removes the element via hx-target and hx-swap="outerHTML"
+		// A 200 OK is usually sufficient. If a page refresh is desired for other reasons (e.g. progress bar update)
+		// then HX-Redirect could be used, but direct element removal is common for deletes.
+		// We will trigger a page refresh to ensure progress bar updates correctly.
+		// Alternatively, the progress bar itself could listen for a custom event.
+		// For now, HX-Refresh is a good general approach if the list itself doesn't reload.
+		// Or, redirect to ensure everything is fresh.
+		w.Header().Set("HX-Redirect", redirectURL)
 		w.WriteHeader(http.StatusOK)
 	} else {
-		// For non-HTMX, redirect. Need to know where to redirect.
-		// The original frequency might have been part of the URL or form data.
-		// For simplicity, redirecting to user's home or a default habit page.
-		// This part might need adjustment based on how delete is triggered in non-HTMX.
-		// Assuming a path like /habits/delete/{frequency}/{id} would be better for non-HTMX.
-		// Since your current route is /habits/delete/{id}, we don't have frequency easily.
-		http.Redirect(w, r, "/"+r.PathValue("frequency"), http.StatusSeeOther)
+		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	}
 }
 
@@ -482,12 +474,9 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) {
 	userID := app.authenticatedUserID(r)
 	if userID == 0 {
-		// For HTMX, returning an empty progress or 0% might be okay
-		// For non-HTMX, this endpoint might not be directly accessed.
 		if isHTMXRequest(r) {
 			w.Header().Set("Content-Type", "text/html")
-			// Return 0 progress if not authenticated for an HTMX request
-			w.Write([]byte(`<div class="bg-indigo-500 h-4 rounded-full" style="width: 0%"></div>`))
+			w.Write([]byte(`<div class="bg-indigo-500 h-4 rounded-full" style="width: 0%">0%</div>`))
 		} else {
 			app.clientError(w, http.StatusUnauthorized)
 		}
@@ -500,8 +489,7 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Get habits for the specific user and frequency
-	habits, err := app.habits.GetAllByFrequency(userID, frequency) // <<< PASS userID
+	habits, err := app.habits.GetAllByFrequency(userID, frequency)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -510,13 +498,14 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 	var completed, total int
 	today := time.Now().Format("2006-01-02")
 
-	for _, habit := range habits { // Iterate over user's habits
+	for _, habit := range habits {
 		entries, err := app.habits.GetEntries(habit.ID, time.Now(), time.Now())
 		if err == nil && len(entries) > 0 {
 			for _, entry := range entries {
+				// Ensure we are looking at today's entry and it's completed
 				if entry.EntryDate.Format("2006-01-02") == today && entry.Status == "completed" {
 					completed++
-					break
+					break // Count each habit only once per day for completion
 				}
 			}
 		}
@@ -528,77 +517,50 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 		progress = (completed * 100) / total
 	}
 
-	if isHTMXRequest(r) {
-		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<div class="bg-indigo-500 h-4 rounded-full" style="width: ` + strconv.Itoa(progress) + `%"></div>`))
-		return
-	}
-
-	// Regular response (if this handler is ever called non-HTMX for progress)
-	data := NewTemplateData()
-	data.Progress = progress
-	// data.IsAuthenticated = true // If rendering a full page via this route
-	app.render(w, r, http.StatusOK, "partials/progress_bar.tmpl", data) // Or a full page if needed
+	// Always return HTML for HTMX
+	w.Header().Set("Content-Type", "text/html")
+	// The hx-get on the progress bar is for the inner div, so we send that.
+	w.Write([]byte(`<div class="progress-bar" style="width: ` + strconv.Itoa(progress) + `%;">` + strconv.Itoa(progress) + `%</div>`))
 }
 
 func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request) {
 	data := NewTemplateData()
 	data.Title = "Sign Up"
-
-	// signup.tmpl is now a standalone page
 	err := app.render(w, r, http.StatusOK, "signup.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
-
 }
 
 func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
-	// 1. Parse form data
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	// 2. Extract values
 	name := r.PostForm.Get("name")
 	email := r.PostForm.Get("email")
-	passwordInput := r.PostForm.Get("password") // Plaintext password
+	passwordInput := r.PostForm.Get("password")
 
-	// 3. Initialize Validator
 	v := validator.NewValidator()
-
-	// 4. Create User struct (without password yet)
-	// The password field is now handled by the data.password type
 	user := &data.User{
 		Name:  name,
 		Email: email,
-		// Active will be set later based on example logic
 	}
-
-	// 5. Validate name and email using your existing function
-	data.ValidateUser(v, user) // Directly call the validation function
-
-	// 6. Validate plaintext password (rules defined in the handler)
+	data.ValidateUser(v, user)
 	v.Check(validator.NotBlank(passwordInput), "password", "Password must be provided")
 	v.Check(validator.MinLength(passwordInput, 8), "password", "Password must be at least 8 characters long")
 	v.Check(validator.MaxLength(passwordInput, 72), "password", "Password must not be more than 72 characters")
 
-	// 7. Check if validation failed
 	if !v.ValidData() {
-		app.logger.Info("Signup validation failed", "errors", v.Errors)
-		// Prepare data for re-rendering the form
-		formData := NewTemplateData() // Use your existing helper
+		formData := NewTemplateData()
 		formData.Title = "Sign Up - Error"
 		formData.FormErrors = v.Errors
-		// Repopulate form data (excluding password)
 		formData.FormData = map[string]string{
 			"name":  name,
 			"email": email,
 		}
-
-		// Render the signup page again with errors
 		errRender := app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl", formData)
 		if errRender != nil {
 			app.serverError(w, r, errRender)
@@ -606,30 +568,20 @@ func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// --- Validation Passed ---
-
-	// 8. Set and Hash the password using the User struct's method
 	err = user.Password.Set(passwordInput)
 	if err != nil {
-		app.serverError(w, r, err) // Handle potential bcrypt errors
+		app.serverError(w, r, err)
 		return
 	}
-
-	// 9. Set user as active (based on example logic)
 	user.Active = true
 
-	// 10. Insert the user data into the database
-	err = app.users.Insert(user) // This now sends the hashed password correctly
+	err = app.users.Insert(user)
 	if err != nil {
-		// Check specifically for the duplicate email error returned by Insert
 		if errors.Is(err, data.ErrDuplicateEmail) {
-			v.AddError("email", "Email address is already registered") // Add error *to the validator*
-
-			app.logger.Info("Signup failed due to duplicate email", "email", email)
-			// Re-render the form with the duplicate email error added to FormErrors
+			v.AddError("email", "Email address is already registered")
 			formData := NewTemplateData()
 			formData.Title = "Sign Up - Error"
-			formData.FormErrors = v.Errors // Pass the updated validator errors
+			formData.FormErrors = v.Errors
 			formData.FormData = map[string]string{
 				"name":  name,
 				"email": email,
@@ -639,29 +591,19 @@ func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
 				app.serverError(w, r, errRender)
 			}
 		} else {
-			// Handle any other database insertion errors
 			app.serverError(w, r, err)
 		}
-		return // Stop processing on error
+		return
 	}
 
-	// 11. Success! User was created.
-	app.logger.Info("User signed up successfully", "userID", user.ID, "email", user.Email)
-
-	// Add a flash message to the session.
 	app.session.Put(r, "flash", "Your signup was successful! Please log in.")
-
-	// 12. Redirect the user to the login page.
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
 func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
 	data := NewTemplateData()
 	data.Title = "Login"
-	// Retrieve and remove the flash message from the session.
 	data.Flash = app.session.PopString(r, "flash")
-
-	// Note: login.tmpl is now parsed as a standalone page (no nav bar)
 	err := app.render(w, r, http.StatusOK, "login.tmpl", data)
 	if err != nil {
 		app.serverError(w, r, err)
@@ -669,105 +611,79 @@ func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
-	app.logger.Info("Login attempt started") // <-- ADD THIS
-
 	err := r.ParseForm()
 	if err != nil {
-		app.logger.Error("Login: Failed to parse form", "error", err) // <-- ADD THIS
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
 	email := r.PostForm.Get("email")
 	passwordInput := r.PostForm.Get("password")
-
-	// Log the received credentials (BE CAREFUL WITH PASSWORDS IN PRODUCTION LOGS)
-	// For debugging, this is okay, but remove or hash passwords for production.
-	app.logger.Info("Login attempt", "email", email, "password_provided_length", len(passwordInput)) // <-- MODIFIED LOGGING
-
 	v := validator.NewValidator()
 
 	if !validator.NotBlank(email) || !validator.NotBlank(passwordInput) {
-		app.logger.Info("Login: Blank email or password detected by NotBlank check") // <-- ADD THIS
 		v.AddError("generic", "Both email and password must be provided.")
 	}
 
 	if !v.ValidData() {
-		app.logger.Info("Login: Validation failed (e.g., blank fields)", "errors", v.Errors) // <-- ADD THIS
 		data := NewTemplateData()
 		data.Title = "Login - Error"
 		data.FormData = map[string]string{"email": email}
 		data.FormErrors = v.Errors
-
 		errRender := app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", data)
 		if errRender != nil {
-			app.logger.Error("Login: Failed to render login.tmpl on validation error", "render_error", errRender) // <-- ADD THIS
 			app.serverError(w, r, errRender)
 		}
 		return
 	}
 
-	app.logger.Info("Login: Attempting to authenticate user", "email", email) // <-- ADD THIS
 	id, err := app.users.Authenticate(email, passwordInput)
 	if err != nil {
 		if errors.Is(err, data.ErrInvalidCredentials) {
-			app.logger.Info("Login: Authentication failed - Invalid Credentials", "email", email, "auth_error", err) // <-- MODIFIED LOGGING
 			v.AddError("generic", "Invalid email or password.")
-
 			data := NewTemplateData()
 			data.Title = "Login - Error"
 			data.FormData = map[string]string{"email": email}
 			data.FormErrors = v.Errors
-
 			errRender := app.render(w, r, http.StatusUnprocessableEntity, "login.tmpl", data)
 			if errRender != nil {
-				app.logger.Error("Login: Failed to render login.tmpl on auth error", "render_error", errRender) // <-- ADD THIS
 				app.serverError(w, r, errRender)
 			}
 		} else {
-			// Log any other unexpected errors from Authenticate
-			app.logger.Error("Login: Unexpected error during authentication", "email", email, "auth_error", err) // <-- MODIFIED LOGGING
 			app.serverError(w, r, err)
 		}
 		return
 	}
 
-	app.logger.Info("Login: Authentication successful", "userID", id, "email", email) // <-- MODIFIED LOGGING
 	app.session.Put(r, "authenticatedUserID", id)
 	app.session.Put(r, "flash", "You have been logged in successfully!")
 	http.Redirect(w, r, "/apphome", http.StatusSeeOther)
 }
 
-// logoutUserHandler handles user logout
 func (app *application) logoutUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Remove the authenticatedUserID key from the session data.
 	app.session.Remove(r, "authenticatedUserID")
-
-	// Put a flash message in the session to inform the user.
 	app.session.Put(r, "flash", "You have been logged out successfully.")
-
-	// Redirect the user to the login page.
-	// You could also redirect to the home page ("/") if preferred.
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
 
-// Helper to check for HTMX requests
 func isHTMXRequest(r *http.Request) bool {
 	return r.Header.Get("HX-Request") == "true"
 }
 
-// Helper for server errors
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
+	// Prevent error loops with HTMX if serverError itself has an issue
+	if isHTMXRequest(r) && w.Header().Get("Content-Type") == "" {
+		w.Header().Set("HX-Retarget", "body") // Or some other safe default
+		w.Header().Set("HX-Reswap", "innerHTML")
+	}
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
 
-// Helper for client errors
 func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
 }
 
-// Helper for not found errors
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
 }
