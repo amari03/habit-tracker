@@ -2,11 +2,9 @@ package main
 
 import (
 	"errors"
-	//"fmt"
-	//"html/template"
 	"net/http"
 	"strconv"
-	"strings"
+	"strings" // Make sure this is imported
 	"time"
 
 	"github.com/amari03/habit-tracker/internal/data"
@@ -25,11 +23,26 @@ func (app *application) authenticatedUserID(r *http.Request) int64 {
 
 // homeHandler renders the home page
 func (app *application) homeHandler(w http.ResponseWriter, r *http.Request) {
-	data := NewTemplateData()
-	data.Title = "Home"
-	data.IsAuthenticated = true
+	userID := app.authenticatedUserID(r)
+	// User should be authenticated due to middleware, but good to have the ID
 
-	err := app.render(w, r, http.StatusOK, "home.tmpl", data)
+	templatePageData := NewTemplateData()
+	templatePageData.Title = "Home"
+	templatePageData.IsAuthenticated = true
+
+	// Fetch user details to get the name
+	if userID != 0 {
+		user, err := app.users.Get(userID) // Assuming app.users.Get(id) exists and returns (*data.User, error)
+		if err != nil {
+			// Log the error, but don't necessarily block the page from rendering.
+			// The welcome message will just be generic.
+			app.logger.Error("Failed to get user details for home page", "userID", userID, "error", err)
+		} else if user != nil {
+			templatePageData.UserName = user.Name
+		}
+	}
+
+	err := app.render(w, r, http.StatusOK, "home.tmpl", templatePageData)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -195,15 +208,6 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 			app.serverError(w, r, errors.New("invalid frequency on validation error"))
 			return
 		}
-
-		// For HTMX, re-render the form part within its original page context
-		// For non-HTMX, re-render the whole form page
-		// Since the form is simpler now, re-rendering the whole page with errors is fine.
-		// The HX-Target on the form in daily/weekly.tmpl points to #habit-form-container,
-		// which is part of daily/weekly.tmpl.
-		// So, if HTMX, we should render the form partial into daily/weekly.tmpl context.
-		// For simplicity, we will re-render the entire daily.tmpl or weekly.tmpl with errors.
-
 		err := app.render(w, r, http.StatusUnprocessableEntity, formTemplateName, formTemplateData)
 		if err != nil {
 			app.serverError(w, r, err)
@@ -223,7 +227,7 @@ func (app *application) createHabitHandler(w http.ResponseWriter, r *http.Reques
 	redirectURL := "/" + habit.Frequency + "/entries"
 	if isHTMXRequest(r) {
 		w.Header().Set("HX-Redirect", redirectURL)
-		w.WriteHeader(http.StatusOK) // Or 204 if no content needed, but HX-Redirect implies client handles it
+		w.WriteHeader(http.StatusOK)
 	} else {
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	}
@@ -272,7 +276,6 @@ func (app *application) logEntryHandler(w http.ResponseWriter, r *http.Request) 
 
 	redirectURL := "/" + habit.Frequency + "/entries"
 	if isHTMXRequest(r) {
-		// Instead of HX-Trigger, redirecting to refresh the page is simpler given the structure change
 		w.Header().Set("HX-Redirect", redirectURL)
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -318,7 +321,7 @@ func (app *application) editHabitHandler(w http.ResponseWriter, r *http.Request)
 	editTemplateData := NewTemplateData()
 	editTemplateData.Title = "Edit Habit"
 	editTemplateData.Habit = habit
-	editTemplateData.Frequency = frequencyPathValue // This is the context of the edit page, habit.Frequency is the current value
+	editTemplateData.Frequency = frequencyPathValue
 	editTemplateData.PermittedFrequencies = []string{"daily", "weekly"}
 	editTemplateData.IsAuthenticated = true
 	editTemplateData.FormData = map[string]string{
@@ -342,7 +345,7 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	frequencyPathValue := r.PathValue("frequency") // Original frequency from path (context of edit page)
+	frequencyPathValue := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -360,7 +363,7 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		UserID:      userID,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
-		Frequency:   r.FormValue("frequency"), // New frequency from form
+		Frequency:   r.FormValue("frequency"),
 		Goal:        r.FormValue("goal"),
 	}
 
@@ -384,8 +387,8 @@ func (app *application) updateHabitHandler(w http.ResponseWriter, r *http.Reques
 		errorTemplateData := NewTemplateData()
 		errorTemplateData.Title = "Edit Habit - Error"
 		errorTemplateData.FormErrors = v.Errors
-		errorTemplateData.Habit = habitToUpdate          // Pass the data with errors back to the form
-		errorTemplateData.Frequency = frequencyPathValue // Original frequency context of the edit page
+		errorTemplateData.Habit = habitToUpdate
+		errorTemplateData.Frequency = frequencyPathValue
 		errorTemplateData.PermittedFrequencies = []string{"daily", "weekly"}
 		errorTemplateData.IsAuthenticated = true
 		errorTemplateData.FormData = map[string]string{
@@ -423,7 +426,6 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Get frequency and id from path
 	frequency := r.PathValue("frequency")
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -439,10 +441,7 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		if errors.Is(err, data.ErrRecordNotFound) {
 			if isHTMXRequest(r) {
-				// If HTMX expects the element to be gone, a 200 OK is fine.
-				// The target row won't exist anymore, so HTMX swap won't find it.
-				// Or, return an empty response if hx-swap="outerHTML" and target is the row.
-				w.WriteHeader(http.StatusOK) // Let HTMX remove the element.
+				w.WriteHeader(http.StatusOK)
 				return
 			}
 			app.notFound(w)
@@ -456,13 +455,6 @@ func (app *application) deleteHabitHandler(w http.ResponseWriter, r *http.Reques
 	redirectURL := "/" + frequency + "/entries"
 
 	if isHTMXRequest(r) {
-		// For DELETE, HTMX typically removes the element via hx-target and hx-swap="outerHTML"
-		// A 200 OK is usually sufficient. If a page refresh is desired for other reasons (e.g. progress bar update)
-		// then HX-Redirect could be used, but direct element removal is common for deletes.
-		// We will trigger a page refresh to ensure progress bar updates correctly.
-		// Alternatively, the progress bar itself could listen for a custom event.
-		// For now, HX-Refresh is a good general approach if the list itself doesn't reload.
-		// Or, redirect to ensure everything is fresh.
 		w.Header().Set("HX-Redirect", redirectURL)
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -502,10 +494,9 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 		entries, err := app.habits.GetEntries(habit.ID, time.Now(), time.Now())
 		if err == nil && len(entries) > 0 {
 			for _, entry := range entries {
-				// Ensure we are looking at today's entry and it's completed
 				if entry.EntryDate.Format("2006-01-02") == today && entry.Status == "completed" {
 					completed++
-					break // Count each habit only once per day for completion
+					break
 				}
 			}
 		}
@@ -517,9 +508,7 @@ func (app *application) progressHandler(w http.ResponseWriter, r *http.Request) 
 		progress = (completed * 100) / total
 	}
 
-	// Always return HTML for HTMX
 	w.Header().Set("Content-Type", "text/html")
-	// The hx-get on the progress bar is for the inner div, so we send that.
 	w.Write([]byte(`<div class="progress-bar" style="width: ` + strconv.Itoa(progress) + `%;">` + strconv.Itoa(progress) + `%</div>`))
 }
 
@@ -672,9 +661,8 @@ func isHTMXRequest(r *http.Request) bool {
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	app.logger.Error(err.Error(), "method", r.Method, "uri", r.URL.RequestURI())
-	// Prevent error loops with HTMX if serverError itself has an issue
 	if isHTMXRequest(r) && w.Header().Get("Content-Type") == "" {
-		w.Header().Set("HX-Retarget", "body") // Or some other safe default
+		w.Header().Set("HX-Retarget", "body")
 		w.Header().Set("HX-Reswap", "innerHTML")
 	}
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)

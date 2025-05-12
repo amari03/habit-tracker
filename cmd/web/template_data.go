@@ -19,6 +19,7 @@ type TemplateData struct {
 	Flash                string        // For flash messages
 	IsAuthenticated      bool          // For authentication check
 	CSRFToken            string        // CSRF token for forms
+	UserName             string        // <<< ADD THIS FIELD for the user's name
 }
 
 func NewTemplateData() *TemplateData {
@@ -28,5 +29,6 @@ func NewTemplateData() *TemplateData {
 		Year:            time.Now().Year(), // Added default year
 		IsAuthenticated: false,             // Default to false
 		CSRFToken:       "",                // Default to empty string
+		UserName:        "",                // Initialize UserName
 	}
 }

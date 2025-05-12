@@ -2,7 +2,9 @@
 
 {{define "content"}}
 <div class="welcome-card">
-    <h2 class="welcome-title">Welcome!</h2>
+    <h2 class="welcome-title">
+        Welcome{{if .UserName}}, {{.UserName}}{{end}}!
+    </h2>
     <p class="welcome-message">What habits are we tracking today?</p>
     <div class="button-container">
         <a href="/daily" class="primary-button">Daily Habits</a>
